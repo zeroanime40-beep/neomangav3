@@ -191,7 +191,7 @@ class DomainModule : InjektModule {
         addSingletonFactory<SourceRepository> { SourceRepositoryImpl(get(), get()) }
         addSingletonFactory<StubSourceRepository> { StubSourceRepositoryImpl(get()) }
         addFactory { GetEnabledSources(get(), get()) }
-        addSingletonFactory { eu.kanade.domain.source.interactor.GetUnifiedGlobalCatalogUseCase(get(), get(), get()) }
+        addSingletonFactory { eu.kanade.domain.source.interactor.GetUnifiedGlobalCatalogUseCase(get(), get(), get(), get()) }
         addFactory { GetLanguagesWithSources(get(), get()) }
         addFactory { GetRemoteManga(get()) }
         addFactory { GetSourcesWithFavoriteCount(get(), get()) }

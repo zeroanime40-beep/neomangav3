@@ -16,12 +16,14 @@ import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.source.service.SourceManager
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import eu.kanade.tachiyomi.extension.ExtensionManager
 import java.util.concurrent.atomic.AtomicReference
 
 class GetUnifiedGlobalCatalogUseCase(
     private val getEnabledSources: GetEnabledSources,
     private val sourceManager: SourceManager,
     private val networkToLocalManga: NetworkToLocalManga,
+    private val extensionManager: ExtensionManager,
 ) {
     enum class GlobalSortType {
         POPULAR, LATEST, RATING
@@ -39,27 +41,16 @@ class GetUnifiedGlobalCatalogUseCase(
             val doubleCheck = rawPool.get()
             if (doubleCheck != null) return@withLock doubleCheck
 
-            var prioritySource: CatalogueSource? = null
-            var attempts = 0
-            while (prioritySource == null && attempts < 3) {
-                val enabledSources = withTimeoutOrNull(5000L) {
-                    getEnabledSources.subscribe().first()
-                } ?: emptyList()
+            // Wait for managers to finish initializing
+            extensionManager.isInitialized.first { it }
+            sourceManager.isInitialized.first { it }
 
-                prioritySource = enabledSources
-                    .mapNotNull { sourceManager.get(it.id) as? CatalogueSource }
-                    .firstOrNull { it.name.equals(prioritySourceName, ignoreCase = true) }
-
-                if (prioritySource == null) {
-                    attempts++
-                    if (attempts < 3) {
-                        kotlinx.coroutines.delay(1000L)
-                    }
-                }
-            }
+            val enabledSources = getEnabledSources.subscribe().first()
+            var prioritySource = enabledSources
+                .mapNotNull { sourceManager.get(it.id) as? CatalogueSource }
+                .firstOrNull { it.name.equals(prioritySourceName, ignoreCase = true) }
 
             if (prioritySource == null) {
-                val enabledSources = getEnabledSources.subscribe().first()
                 prioritySource = enabledSources
                     .mapNotNull { sourceManager.get(it.id) as? CatalogueSource }
                     .firstOrNull()
