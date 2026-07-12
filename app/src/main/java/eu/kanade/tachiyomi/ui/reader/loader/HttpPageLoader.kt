@@ -41,7 +41,8 @@ internal class HttpPageLoader(
      */
     private val queue = PriorityBlockingQueue<PriorityPage>()
 
-    private val preloadSize = 4
+    // NEO MANGA: Increased preload threshold to 6 to balance continuous webtoon scrolling against memory limits
+    private val preloadSize = 6
 
     init {
         scope.launchIO {
@@ -131,7 +132,8 @@ internal class HttpPageLoader(
 
         // Cache current page list progress for online chapters to allow a faster reopen
         chapter.pages?.let { pages ->
-            launchIO {
+            // NEO MANGA: Bound caching op to scope to prevent leak
+            scope.launchIO {
                 try {
                     // Convert to pages without reader information
                     val pagesToSave = pages.map { Page(it.index, it.url, it.imageUrl) }

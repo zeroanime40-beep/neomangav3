@@ -198,4 +198,20 @@ class MangaRepositoryImpl(
             }
         }
     }
+
+    override fun subscribeIsTracked(id: Long): Flow<Boolean> {
+        return database.mangasQueries
+            .getTrackingById(id)
+            .subscribeToOne()
+    }
+
+    override fun subscribeTrackedManga(): Flow<List<Manga>> {
+        return database.mangasQueries
+            .getTrackedManga(MangaMapper::mapManga)
+            .subscribeToList()
+    }
+
+    override suspend fun updateTracking(id: Long, isTracked: Boolean) {
+        database.mangasQueries.updateTracking(isTracked, id)
+    }
 }

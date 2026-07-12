@@ -31,7 +31,8 @@ import eu.kanade.tachiyomi.util.system.notify
 import tachiyomi.core.common.Constants
 import tachiyomi.core.common.i18n.pluralStringResource
 import tachiyomi.core.common.i18n.stringResource
-import tachiyomi.core.common.util.lang.launchUI
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.launch
 import tachiyomi.domain.chapter.model.Chapter
 import tachiyomi.domain.library.model.LibraryManga
 import tachiyomi.domain.manga.model.Manga
@@ -208,7 +209,8 @@ class LibraryUpdateNotifier(
 
         // Per-manga notification
         if (!securityPreferences.hideNotificationContent.get()) {
-            launchUI {
+            // NEO MANGA: Use bounded MainScope instead of delicate launchUI
+            MainScope().launch {
                 context.notify(
                     updates.map { (manga, chapters) ->
                         NotificationManagerCompat.NotificationWithIdAndTag(
@@ -224,9 +226,11 @@ class LibraryUpdateNotifier(
     private suspend fun createNewChaptersNotification(manga: Manga, chapters: Array<Chapter>): Notification {
         val icon = getMangaIcon(manga)
         return context.notificationBuilder(Notifications.CHANNEL_NEW_CHAPTERS) {
-            setContentTitle(manga.title)
+            val titleText = "تم صدور فصل جديد من: ${manga.title}"
+            setContentTitle(titleText)
 
-            val description = getNewChaptersDescription(chapters)
+            val chapterNumStr = formatChapterNumber(chapters.first().chapterNumber)
+            val description = "فصل $chapterNumStr متوفر الآن للقراءة!"
             setContentText(description)
             setStyle(NotificationCompat.BigTextStyle().bigText(description))
 

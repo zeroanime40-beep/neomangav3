@@ -112,9 +112,10 @@ class Downloader(
     var isPaused: Boolean = false
 
     init {
-        launchNow {
-            val chapters = async { store.restore() }
-            addAllToQueue(chapters.await())
+        // NEO MANGA: Delegate to bounded class scope instead of GlobalScope
+        scope.launch {
+            val chapters = store.restore()
+            addAllToQueue(chapters)
         }
     }
 

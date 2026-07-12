@@ -82,6 +82,9 @@ import tachiyomi.domain.manga.interactor.NetworkToLocalManga
 import tachiyomi.domain.manga.interactor.ResetViewerFlags
 import tachiyomi.domain.manga.interactor.SetMangaChapterFlags
 import tachiyomi.domain.manga.interactor.UpdateMangaNotes
+import tachiyomi.domain.manga.interactor.SubscribeIsTracked
+import tachiyomi.domain.manga.interactor.SubscribeTrackedManga
+import tachiyomi.domain.manga.interactor.SetMangaTracking
 import tachiyomi.domain.manga.repository.MangaRepository
 import tachiyomi.domain.release.interactor.GetApplicationRelease
 import tachiyomi.domain.release.service.ReleaseService
@@ -134,6 +137,9 @@ class DomainModule : InjektModule {
         addFactory { UpdateManga(get(), get()) }
         addFactory { UpdateMangaNotes(get()) }
         addFactory { SetMangaCategories(get()) }
+        addFactory { SubscribeIsTracked(get()) }
+        addFactory { SubscribeTrackedManga(get()) }
+        addFactory { SetMangaTracking(get()) }
         addFactory { GetExcludedScanlators(get()) }
         addFactory { SetExcludedScanlators(get()) }
         addFactory {
@@ -185,6 +191,7 @@ class DomainModule : InjektModule {
         addSingletonFactory<SourceRepository> { SourceRepositoryImpl(get(), get()) }
         addSingletonFactory<StubSourceRepository> { StubSourceRepositoryImpl(get()) }
         addFactory { GetEnabledSources(get(), get()) }
+        addSingletonFactory { eu.kanade.domain.source.interactor.GetUnifiedGlobalCatalogUseCase(get(), get(), get()) }
         addFactory { GetLanguagesWithSources(get(), get()) }
         addFactory { GetRemoteManga(get()) }
         addFactory { GetSourcesWithFavoriteCount(get(), get()) }

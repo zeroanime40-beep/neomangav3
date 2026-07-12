@@ -1,3 +1,4 @@
+// NEO MANGA: Presentation layer strictly interacting with Domain Interactors and pure Domain entities to maintain UDF/Clean Architecture boundaries
 package eu.kanade.tachiyomi.ui.history
 
 import androidx.compose.material3.SnackbarHostState

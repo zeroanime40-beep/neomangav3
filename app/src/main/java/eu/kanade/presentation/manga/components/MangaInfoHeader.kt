@@ -7,6 +7,7 @@ import androidx.compose.animation.graphics.res.animatedVectorResource
 import androidx.compose.animation.graphics.res.rememberAnimatedVectorPainter
 import androidx.compose.animation.graphics.vector.AnimatedImageVector
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -176,10 +177,12 @@ fun MangaActionRow(
     trackingCount: Int,
     nextUpdate: Instant?,
     isUserIntervalMode: Boolean,
+    isTracked: Boolean,
     onAddToLibraryClicked: () -> Unit,
     onWebViewClicked: (() -> Unit)?,
     onWebViewLongClicked: (() -> Unit)?,
     onTrackingClicked: () -> Unit,
+    onTrackClicked: () -> Unit,
     onEditIntervalClicked: (() -> Unit)?,
     onEditCategory: (() -> Unit)?,
     modifier: Modifier = Modifier,
@@ -208,6 +211,41 @@ fun MangaActionRow(
             onClick = onAddToLibraryClicked,
             onLongClick = onEditCategory,
         )
+        TextButton(
+            onClick = onTrackClicked,
+            modifier = Modifier
+                .weight(1f)
+                .padding(horizontal = 4.dp)
+                .background(
+                    color = if (isTracked) Color(0xFF00E5FF) else Color.Transparent,
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp)
+                )
+                .let {
+                    if (!isTracked) {
+                        it.border(
+                            width = 1.dp,
+                            color = defaultActionButtonColor.copy(alpha = 0.3f),
+                            shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp)
+                        )
+                    } else it
+                },
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Icon(
+                    imageVector = if (isTracked) Icons.Outlined.Done else Icons.Outlined.Sync,
+                    contentDescription = null,
+                    tint = if (isTracked) Color.Black else defaultActionButtonColor,
+                    modifier = Modifier.size(20.dp),
+                )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = if (isTracked) "مُتتبع" else "تتبع",
+                    color = if (isTracked) Color.Black else defaultActionButtonColor,
+                    fontSize = 12.sp,
+                    textAlign = TextAlign.Center,
+                )
+            }
+        }
         MangaActionButton(
             title = when (nextUpdateDays) {
                 null -> stringResource(MR.strings.not_applicable)

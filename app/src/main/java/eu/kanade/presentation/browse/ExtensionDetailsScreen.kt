@@ -77,13 +77,17 @@ fun ExtensionDetailsScreen(
 ) {
     val uriHandler = LocalUriHandler.current
     val url = remember(state.extension) {
-        val regex = """https://raw.githubusercontent.com/(.+?)/(.+?)/.+""".toRegex()
-        regex.find(state.extension?.store?.indexUrl.orEmpty())
-            ?.let {
-                val (user, repo) = it.destructured
-                "https://github.com/$user/$repo"
-            }
-            ?: state.extension?.store?.indexUrl
+        val rawRegex = """https://raw\.githubusercontent\.com/(.+?)/(.+?)/.+""".toRegex()
+        val pagesRegex = """https://(.+?)\.github\.io/(.+?)/.+""".toRegex()
+        val indexUrl = state.extension?.store?.indexUrl.orEmpty()
+        
+        rawRegex.find(indexUrl)?.let {
+            val (user, repo) = it.destructured
+            "https://github.com/$user/$repo"
+        } ?: pagesRegex.find(indexUrl)?.let {
+            val (user, repo) = it.destructured
+            "https://github.com/$user/$repo"
+        } ?: state.extension?.store?.indexUrl
     }
 
     Scaffold(

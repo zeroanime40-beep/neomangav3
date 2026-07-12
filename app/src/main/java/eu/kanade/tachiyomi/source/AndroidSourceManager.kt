@@ -43,6 +43,12 @@ class AndroidSourceManager(
 
     override val sources: Flow<List<Source>> = sourcesMapFlow.map { it.values.toList() }
 
+    private val blockedSourceNames = setOf(
+        "Arab Toons", "ArabManhwa", "Arabs Hentai", "ArbxComix", "MangaHub",
+        "Duskoryvile", "Empire Webtoon", "Goon Scans", "Hentai Slayer", "HentaiMan",
+        "MangaTuk", "Manhatic", "Paradise BL", "Yona Bar", "Yuri Moon Sub"
+    )
+
     init {
         scope.launch {
             extensionManager.installedExtensionsFlow
@@ -58,8 +64,10 @@ class AndroidSourceManager(
                     )
                     extensions.forEach { extension ->
                         extension.sources.forEach {
-                            mutableMap[it.id] = it
-                            registerStubSource(StubSource.from(it))
+                            if (it.name !in blockedSourceNames) {
+                                mutableMap[it.id] = it
+                                registerStubSource(StubSource.from(it))
+                            }
                         }
                     }
                     sourcesMapFlow.value = mutableMap
@@ -70,9 +78,11 @@ class AndroidSourceManager(
         scope.launch {
             sourceRepository.subscribeAll()
                 .collectLatest { sources ->
-                    val mutableMap = stubSourcesMap.toMutableMap()
+                    stubSourcesMap.clear()
                     sources.forEach {
-                        mutableMap[it.id] = it
+                        if (it.name !in blockedSourceNames) {
+                            stubSourcesMap[it.id] = it
+                        }
                     }
                 }
         }

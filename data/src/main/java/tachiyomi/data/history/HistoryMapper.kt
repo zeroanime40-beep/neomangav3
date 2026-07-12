@@ -1,3 +1,4 @@
+// NEO MANGA: Explicit mapper component mapping raw SQLDelight history row data into pure Domain models
 package tachiyomi.data.history
 
 import tachiyomi.domain.history.model.History

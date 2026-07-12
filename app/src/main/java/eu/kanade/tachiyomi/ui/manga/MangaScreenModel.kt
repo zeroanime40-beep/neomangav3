@@ -314,6 +314,13 @@ class MangaScreenModel(
         )
     }
 
+    fun toggleTracking() {
+        val manga = manga ?: return
+        screenModelScope.launchIO {
+            mangaRepository.updateTracking(manga.id, !manga.isTracked)
+        }
+    }
+
     /**
      * Update favorite status of manga, (removes / adds) manga (to / from) library.
      */
@@ -346,32 +353,44 @@ class MangaScreenModel(
                     }
                 }
 
-                // Now check if user previously set categories, when available
-                val categories = getCategories()
-                val defaultCategoryId = libraryPreferences.defaultCategory.get().toLong()
-                val defaultCategory = categories.find { it.id == defaultCategoryId }
-                when {
-                    // Default category set
-                    defaultCategory != null -> {
-                        val result = updateManga.awaitUpdateFavorite(manga.id, true)
-                        if (!result) return@launchIO
-                        moveMangaToCategory(defaultCategory)
-                    }
+                // Show onboarding tracking confirmation dialog
+                updateSuccessState { it.copy(dialog = Dialog.TrackingOnboarding(manga)) }
+            }
+        }
+    }
 
-                    // Automatic 'Default' or no categories
-                    defaultCategoryId == 0L || categories.isEmpty() -> {
-                        val result = updateManga.awaitUpdateFavorite(manga.id, true)
-                        if (!result) return@launchIO
-                        moveMangaToCategory(null)
-                    }
-
-                    // Choose a category
-                    else -> showChangeCategoryDialog()
+    fun confirmFavoriteWithTracking(manga: Manga, enableTracking: Boolean) {
+        screenModelScope.launchIO {
+            mangaRepository.updateTracking(manga.id, enableTracking)
+            val categories = getCategories()
+            val defaultCategoryId = libraryPreferences.defaultCategory.get().toLong()
+            val defaultCategory = categories.find { it.id == defaultCategoryId }
+            when {
+                // Default category set
+                defaultCategory != null -> {
+                    val result = updateManga.awaitUpdateFavorite(manga.id, true)
+                    if (!result) return@launchIO
+                    moveMangaToCategory(defaultCategory)
                 }
 
-                // Finally match with enhanced tracking when available
-                addTracks.bindEnhancedTrackers(manga, state.source)
+                // Automatic 'Default' or no categories
+                defaultCategoryId == 0L || categories.isEmpty() -> {
+                    val result = updateManga.awaitUpdateFavorite(manga.id, true)
+                    if (!result) return@launchIO
+                    moveMangaToCategory(null)
+                }
+
+                // Choose a category
+                else -> {
+                    val result = updateManga.awaitUpdateFavorite(manga.id, true)
+                    if (!result) return@launchIO
+                    withUIContext {
+                        showChangeCategoryDialog()
+                    }
+                }
             }
+
+            addTracks.bindEnhancedTrackers(manga, successState?.source ?: return@launchIO)
         }
     }
 
@@ -1061,6 +1080,7 @@ class MangaScreenModel(
         data class DuplicateManga(val manga: Manga, val duplicates: List<MangaWithChapterCount>) : Dialog
         data class Migrate(val target: Manga, val current: Manga) : Dialog
         data class SetFetchInterval(val manga: Manga) : Dialog
+        data class TrackingOnboarding(val manga: Manga) : Dialog
         data object SettingsSheet : Dialog
         data object TrackSheet : Dialog
         data object FullCover : Dialog

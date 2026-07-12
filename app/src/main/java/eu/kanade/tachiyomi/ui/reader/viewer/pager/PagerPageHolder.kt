@@ -5,13 +5,13 @@ import android.content.Context
 import android.view.LayoutInflater
 import androidx.core.view.isVisible
 import eu.kanade.presentation.util.formattedMessage
-import eu.kanade.tachiyomi.databinding.ReaderErrorBinding
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.ui.reader.model.InsertPage
 import eu.kanade.tachiyomi.ui.reader.model.ReaderPage
 import eu.kanade.tachiyomi.ui.reader.viewer.ReaderPageImageView
 import eu.kanade.tachiyomi.ui.reader.viewer.ReaderProgressIndicator
 import eu.kanade.tachiyomi.ui.webview.WebViewActivity
+import androidx.compose.ui.platform.ComposeView
 import eu.kanade.tachiyomi.widget.ViewPagerAdapter
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.MainScope
@@ -28,6 +28,8 @@ import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.core.common.util.system.ImageUtil
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.i18n.MR
+import tachiyomi.presentation.core.components.ReaderErrorScreen
+import eu.kanade.tachiyomi.util.view.setComposeContent
 
 /**
  * View of the ViewPager that contains a page of a chapter.
@@ -53,7 +55,7 @@ class PagerPageHolder(
     /**
      * Error layout to show when the image fails to load.
      */
-    private var errorLayout: ReaderErrorBinding? = null
+    private var errorLayout: ComposeView? = null
 
     private val scope = MainScope()
 
@@ -271,33 +273,36 @@ class PagerPageHolder(
         viewer.activity.hideMenu()
     }
 
-    private fun showErrorLayout(error: Throwable?): ReaderErrorBinding {
+    // NEO MANGA: ComposeView injected for premium error scaffolding
+    private fun showErrorLayout(error: Throwable?): ComposeView {
         if (errorLayout == null) {
-            errorLayout = ReaderErrorBinding.inflate(LayoutInflater.from(context), this, true)
-            errorLayout?.actionRetry?.viewer = viewer
-            errorLayout?.actionRetry?.setOnClickListener {
-                page.chapter.pageLoader?.retryPage(page)
+            errorLayout = ComposeView(context).apply {
+                layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
             }
+            addView(errorLayout)
         }
 
         val imageUrl = page.imageUrl
-        errorLayout?.actionOpenInWebView?.isVisible = imageUrl != null
-        if (imageUrl != null) {
-            if (imageUrl.startsWith("http", true)) {
-                errorLayout?.actionOpenInWebView?.viewer = viewer
-                errorLayout?.actionOpenInWebView?.setOnClickListener {
-                    val sourceId = viewer.activity.viewModel.manga?.source
-
-                    val intent = WebViewActivity.newIntent(context, imageUrl, sourceId)
-                    context.startActivity(intent)
-                }
-            }
-        }
-
-        errorLayout?.errorMessage?.text = with(context) { error?.formattedMessage }
+        val showWebView = imageUrl != null && imageUrl.startsWith("http", true)
+        val errorMessage = with(context) { error?.formattedMessage }
             ?: context.stringResource(MR.strings.decode_image_error)
 
-        errorLayout?.root?.isVisible = true
+        errorLayout?.setComposeContent {
+            ReaderErrorScreen(
+                errorMessage = errorMessage,
+                onRetry = {
+                    page.chapter.pageLoader?.retryPage(page)
+                },
+                onOpenInWebView = {
+                    val sourceId = viewer.activity.viewModel.manga?.source
+                    val intent = WebViewActivity.newIntent(context, imageUrl!!, sourceId)
+                    context.startActivity(intent)
+                },
+                showWebView = showWebView
+            )
+        }
+
+        errorLayout?.isVisible = true
         return errorLayout!!
     }
 
@@ -305,7 +310,9 @@ class PagerPageHolder(
      * Removes the decode error layout from the holder, if found.
      */
     private fun removeErrorLayout() {
-        errorLayout?.root?.isVisible = false
-        errorLayout = null
+        if (errorLayout != null) {
+            removeView(errorLayout)
+            errorLayout = null
+        }
     }
 }

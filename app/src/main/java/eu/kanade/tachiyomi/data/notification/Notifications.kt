@@ -103,16 +103,16 @@ object Notifications {
         notificationManager.createNotificationChannelGroupsCompat(
             listOf(
                 buildNotificationChannelGroup(GROUP_BACKUP_RESTORE) {
-                    setName(context.stringResource(MR.strings.label_backup))
+                    setName("NEO MANGA: " + context.stringResource(MR.strings.label_backup))
                 },
                 buildNotificationChannelGroup(GROUP_DOWNLOADER) {
-                    setName(context.stringResource(MR.strings.download_notifier_downloader_title))
+                    setName("NEO MANGA: " + context.stringResource(MR.strings.download_notifier_downloader_title))
                 },
                 buildNotificationChannelGroup(GROUP_LIBRARY) {
-                    setName(context.stringResource(MR.strings.label_library))
+                    setName("NEO MANGA: " + context.stringResource(MR.strings.label_library))
                 },
                 buildNotificationChannelGroup(GROUP_APK_UPDATES) {
-                    setName(context.stringResource(MR.strings.label_recent_updates))
+                    setName("NEO MANGA: " + context.stringResource(MR.strings.label_recent_updates))
                 },
             ),
         )
@@ -120,52 +120,52 @@ object Notifications {
         notificationManager.createNotificationChannelsCompat(
             listOf(
                 buildNotificationChannel(CHANNEL_COMMON, IMPORTANCE_LOW) {
-                    setName(context.stringResource(MR.strings.channel_common))
+                    setName("NEO MANGA: " + context.stringResource(MR.strings.channel_common))
                 },
                 buildNotificationChannel(CHANNEL_LIBRARY_PROGRESS, IMPORTANCE_LOW) {
-                    setName(context.stringResource(MR.strings.channel_progress))
+                    setName("NEO MANGA: " + context.stringResource(MR.strings.channel_progress))
                     setGroup(GROUP_LIBRARY)
                     setShowBadge(false)
                 },
                 buildNotificationChannel(CHANNEL_LIBRARY_ERROR, IMPORTANCE_LOW) {
-                    setName(context.stringResource(MR.strings.channel_errors))
+                    setName("NEO MANGA: " + context.stringResource(MR.strings.channel_errors))
                     setGroup(GROUP_LIBRARY)
                     setShowBadge(false)
                 },
                 buildNotificationChannel(CHANNEL_NEW_CHAPTERS, IMPORTANCE_DEFAULT) {
-                    setName(context.stringResource(MR.strings.channel_new_chapters))
+                    setName("NEO MANGA: " + context.stringResource(MR.strings.channel_new_chapters))
                 },
                 buildNotificationChannel(CHANNEL_DOWNLOADER_PROGRESS, IMPORTANCE_LOW) {
-                    setName(context.stringResource(MR.strings.channel_progress))
+                    setName("NEO MANGA: " + context.stringResource(MR.strings.channel_progress))
                     setGroup(GROUP_DOWNLOADER)
                     setShowBadge(false)
                 },
                 buildNotificationChannel(CHANNEL_DOWNLOADER_ERROR, IMPORTANCE_LOW) {
-                    setName(context.stringResource(MR.strings.channel_errors))
+                    setName("NEO MANGA: " + context.stringResource(MR.strings.channel_errors))
                     setGroup(GROUP_DOWNLOADER)
                     setShowBadge(false)
                 },
                 buildNotificationChannel(CHANNEL_BACKUP_RESTORE_PROGRESS, IMPORTANCE_LOW) {
-                    setName(context.stringResource(MR.strings.channel_progress))
+                    setName("NEO MANGA: " + context.stringResource(MR.strings.channel_progress))
                     setGroup(GROUP_BACKUP_RESTORE)
                     setShowBadge(false)
                 },
                 buildNotificationChannel(CHANNEL_BACKUP_RESTORE_COMPLETE, IMPORTANCE_HIGH) {
-                    setName(context.stringResource(MR.strings.channel_complete))
+                    setName("NEO MANGA: " + context.stringResource(MR.strings.channel_complete))
                     setGroup(GROUP_BACKUP_RESTORE)
                     setShowBadge(false)
                     setSound(null, null)
                 },
                 buildNotificationChannel(CHANNEL_INCOGNITO_MODE, IMPORTANCE_LOW) {
-                    setName(context.stringResource(MR.strings.pref_incognito_mode))
+                    setName("NEO MANGA: " + context.stringResource(MR.strings.pref_incognito_mode))
                 },
                 buildNotificationChannel(CHANNEL_APP_UPDATE, IMPORTANCE_DEFAULT) {
                     setGroup(GROUP_APK_UPDATES)
-                    setName(context.stringResource(MR.strings.channel_app_updates))
+                    setName("NEO MANGA: " + context.stringResource(MR.strings.channel_app_updates))
                 },
                 buildNotificationChannel(CHANNEL_EXTENSIONS_UPDATE, IMPORTANCE_DEFAULT) {
                     setGroup(GROUP_APK_UPDATES)
-                    setName(context.stringResource(MR.strings.channel_ext_updates))
+                    setName("NEO MANGA: " + context.stringResource(MR.strings.channel_ext_updates))
                 },
             ),
         )

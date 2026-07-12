@@ -1,3 +1,4 @@
+// NEO MANGA: Data layer implementation mapping SQL queries strictly to Domain entities, preventing raw SQLDelight classes from leaking to higher layers
 package tachiyomi.data.history
 
 import app.cash.sqldelight.async.coroutines.awaitAsList

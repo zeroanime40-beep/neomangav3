@@ -1,3 +1,4 @@
+// NEO MANGA: Domain interactor orchestrating Library queries via the MangaRepository to maintain pure UDF pipelines
 package tachiyomi.domain.manga.interactor
 
 import kotlinx.coroutines.delay

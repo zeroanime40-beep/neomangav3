@@ -1,3 +1,4 @@
+// NEO MANGA: Domain interactor strictly retrieving categories from the CategoryRepository, decoupling the UI from data mapping
 package tachiyomi.domain.category.interactor
 
 import kotlinx.coroutines.flow.Flow

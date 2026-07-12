@@ -1,3 +1,4 @@
+// NEO MANGA: Data layer implementation mapping SQL queries strictly to Domain entities using CategoryMapper
 package tachiyomi.data.category
 
 import app.cash.sqldelight.async.coroutines.awaitAsList
@@ -15,31 +16,31 @@ class CategoryRepositoryImpl(
 
     override suspend fun get(id: Long): Category? {
         return database.categoriesQueries
-            .getCategory(id, ::mapCategory)
+            .getCategory(id, CategoryMapper::mapCategory)
             .awaitAsOneOrNull()
     }
 
     override suspend fun getAll(): List<Category> {
         return database.categoriesQueries
-            .getCategories(::mapCategory)
+            .getCategories(CategoryMapper::mapCategory)
             .awaitAsList()
     }
 
     override fun getAllAsFlow(): Flow<List<Category>> {
         return database.categoriesQueries
-            .getCategories(::mapCategory)
+            .getCategories(CategoryMapper::mapCategory)
             .subscribeToList()
     }
 
     override suspend fun getCategoriesByMangaId(mangaId: Long): List<Category> {
         return database.categoriesQueries
-            .getCategoriesByMangaId(mangaId, ::mapCategory)
+            .getCategoriesByMangaId(mangaId, CategoryMapper::mapCategory)
             .awaitAsList()
     }
 
     override fun getCategoriesByMangaIdAsFlow(mangaId: Long): Flow<List<Category>> {
         return database.categoriesQueries
-            .getCategoriesByMangaId(mangaId, ::mapCategory)
+            .getCategoriesByMangaId(mangaId, CategoryMapper::mapCategory)
             .subscribeToList()
     }
 
@@ -74,17 +75,4 @@ class CategoryRepositoryImpl(
         database.categoriesQueries.delete(categoryId = categoryId)
     }
 
-    private fun mapCategory(
-        id: Long,
-        name: String,
-        order: Long,
-        flags: Long,
-    ): Category {
-        return Category(
-            id = id,
-            name = name,
-            order = order,
-            flags = flags,
-        )
-    }
 }

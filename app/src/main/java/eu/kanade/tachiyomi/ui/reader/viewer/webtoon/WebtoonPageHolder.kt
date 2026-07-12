@@ -11,12 +11,13 @@ import androidx.core.view.updateLayoutParams
 import androidx.core.view.updateMargins
 import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView
 import eu.kanade.presentation.util.formattedMessage
-import eu.kanade.tachiyomi.databinding.ReaderErrorBinding
+import eu.kanade.presentation.util.formattedMessage
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.ui.reader.model.ReaderPage
 import eu.kanade.tachiyomi.ui.reader.viewer.ReaderPageImageView
 import eu.kanade.tachiyomi.ui.reader.viewer.ReaderProgressIndicator
 import eu.kanade.tachiyomi.ui.webview.WebViewActivity
+import androidx.compose.ui.platform.ComposeView
 import eu.kanade.tachiyomi.util.system.dpToPx
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.MainScope
@@ -32,7 +33,10 @@ import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.core.common.util.system.ImageUtil
 import tachiyomi.core.common.util.system.logcat
+import tachiyomi.core.common.util.system.logcat
 import tachiyomi.i18n.MR
+import tachiyomi.presentation.core.components.ReaderErrorScreen
+import eu.kanade.tachiyomi.util.view.setComposeContent
 
 /**
  * Holder of the webtoon reader for a single page of a chapter.
@@ -60,7 +64,7 @@ class WebtoonPageHolder(
     /**
      * Error layout to show when the image fails to load.
      */
-    private var errorLayout: ReaderErrorBinding? = null
+    private var errorLayout: ComposeView? = null
 
     /**
      * Getter to retrieve the height of the recycler view.
@@ -276,30 +280,34 @@ class WebtoonPageHolder(
     /**
      * Initializes a button to retry pages.
      */
-    private fun initErrorLayout(error: Throwable?): ReaderErrorBinding {
+    // NEO MANGA: ComposeView injected for premium error scaffolding
+    private fun initErrorLayout(error: Throwable?): ComposeView {
         if (errorLayout == null) {
-            errorLayout = ReaderErrorBinding.inflate(LayoutInflater.from(context), frame, true)
-            errorLayout?.root?.layoutParams = FrameLayout.LayoutParams(MATCH_PARENT, (parentHeight * 0.8).toInt())
-            errorLayout?.actionRetry?.setOnClickListener {
-                page?.let { it.chapter.pageLoader?.retryPage(it) }
+            errorLayout = ComposeView(context).apply {
+                layoutParams = FrameLayout.LayoutParams(MATCH_PARENT, (parentHeight * 0.8).toInt())
             }
+            frame.addView(errorLayout)
         }
 
         val imageUrl = page?.imageUrl
-        errorLayout?.actionOpenInWebView?.isVisible = imageUrl != null
-        if (imageUrl != null) {
-            if (imageUrl.startsWith("http", true)) {
-                errorLayout?.actionOpenInWebView?.setOnClickListener {
-                    val sourceId = viewer.activity.viewModel.manga?.source
-
-                    val intent = WebViewActivity.newIntent(context, imageUrl, sourceId)
-                    context.startActivity(intent)
-                }
-            }
-        }
-
-        errorLayout?.errorMessage?.text = with(context) { error?.formattedMessage }
+        val showWebView = imageUrl != null && imageUrl.startsWith("http", true)
+        val errorMessage = with(context) { error?.formattedMessage }
             ?: context.stringResource(MR.strings.decode_image_error)
+
+        errorLayout?.setComposeContent {
+            ReaderErrorScreen(
+                errorMessage = errorMessage,
+                onRetry = {
+                    page?.let { it.chapter.pageLoader?.retryPage(it) }
+                },
+                onOpenInWebView = {
+                    val sourceId = viewer.activity.viewModel.manga?.source
+                    val intent = WebViewActivity.newIntent(context, imageUrl!!, sourceId)
+                    context.startActivity(intent)
+                },
+                showWebView = showWebView
+            )
+        }
 
         return errorLayout!!
     }
@@ -309,7 +317,7 @@ class WebtoonPageHolder(
      */
     private fun removeErrorLayout() {
         errorLayout?.let {
-            frame.removeView(it.root)
+            frame.removeView(it)
             errorLayout = null
         }
     }

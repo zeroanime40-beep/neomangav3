@@ -1,3 +1,5 @@
+// NEO MANGA: Root Navigation Entry Point. Voyager Navigator is hosted here and transitions are encapsulated within the newly injected NeoMangaTheme (via setComposeContent).
+// NEO MANGA: Injected native splash dismissal and Compose micro-animation intercept.
 package eu.kanade.tachiyomi.ui.main
 
 import android.animation.ValueAnimator
@@ -23,6 +25,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
@@ -95,6 +98,7 @@ import eu.kanade.tachiyomi.ui.setting.SettingsScreen
 import eu.kanade.tachiyomi.util.system.dpToPx
 import eu.kanade.tachiyomi.util.system.isBenchmarkBuildType
 import eu.kanade.tachiyomi.util.system.isNavigationBarNeedsScrim
+import uy.kohesive.injekt.api.get
 import eu.kanade.tachiyomi.util.system.updaterEnabled
 import eu.kanade.tachiyomi.util.view.setComposeContent
 import kotlinx.coroutines.channels.awaitClose
@@ -159,6 +163,16 @@ class MainActivity : BaseActivity() {
             return
         }
 
+        // Trigger global discovery catalog preload asynchronously
+        lifecycleScope.launch {
+            try {
+                val getGlobalCatalog: eu.kanade.domain.source.interactor.GetUnifiedGlobalCatalogUseCase = uy.kohesive.injekt.Injekt.get()
+                getGlobalCatalog.preloadPriorityCatalog("Team X")
+            } catch (e: Exception) {
+                // Ignore failure
+            }
+        }
+
         setComposeContent {
             val context = LocalContext.current
 
@@ -183,10 +197,11 @@ class MainActivity : BaseActivity() {
                 )
             }
 
-            Navigator(
-                screen = HomeScreen,
-                disposeBehavior = NavigatorDisposeBehavior(disposeNestedNavigators = false, disposeSteps = true),
-            ) { navigator ->
+            Box(modifier = Modifier.fillMaxSize()) {
+                Navigator(
+                    screen = HomeScreen,
+                    disposeBehavior = NavigatorDisposeBehavior(disposeNestedNavigators = false, disposeSteps = true),
+                ) { navigator ->
                 LaunchedEffect(navigator) {
                     this@MainActivity.navigator = navigator
 
@@ -264,14 +279,15 @@ class MainActivity : BaseActivity() {
                     ShowDonationCampaign()
                 }
             }
+            
+            var showSplash by remember { mutableStateOf(true) }
+            if (showSplash) {
+                NeoMangaSplash(onSplashFinished = { showSplash = false })
+            }
+        }
         }
 
-        val startTime = System.currentTimeMillis()
-        splashScreen?.setKeepOnScreenCondition {
-            val elapsed = System.currentTimeMillis() - startTime
-            elapsed <= SPLASH_MIN_DURATION || (!ready && elapsed <= SPLASH_MAX_DURATION)
-        }
-        setSplashScreenExitAnimation(splashScreen)
+        splashScreen?.setKeepOnScreenCondition { false }
 
         if (isLaunch && libraryPreferences.autoClearChapterCache.get()) {
             lifecycleScope.launchIO {
@@ -468,50 +484,6 @@ class MainActivity : BaseActivity() {
         }
     }
 
-    /**
-     * Sets custom splash screen exit animation on devices prior to Android 12.
-     *
-     * When custom animation is used, status and navigation bar color will be set to transparent and will be restored
-     * after the animation is finished.
-     */
-    @Suppress("Deprecation")
-    private fun setSplashScreenExitAnimation(splashScreen: SplashScreen?) {
-        val root = findViewById<View>(android.R.id.content)
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S && splashScreen != null) {
-            window.statusBarColor = Color.TRANSPARENT
-            window.navigationBarColor = Color.TRANSPARENT
-
-            splashScreen.setOnExitAnimationListener { splashProvider ->
-                // For some reason the SplashScreen applies (incorrect) Y translation to the iconView
-                splashProvider.iconView.translationY = 0F
-
-                val activityAnim = ValueAnimator.ofFloat(1F, 0F).apply {
-                    interpolator = LinearOutSlowInInterpolator()
-                    duration = SPLASH_EXIT_ANIM_DURATION
-                    addUpdateListener { va ->
-                        val value = va.animatedValue as Float
-                        root.translationY = value * 16.dpToPx
-                    }
-                }
-
-                val splashAnim = ValueAnimator.ofFloat(1F, 0F).apply {
-                    interpolator = FastOutSlowInInterpolator()
-                    duration = SPLASH_EXIT_ANIM_DURATION
-                    addUpdateListener { va ->
-                        val value = va.animatedValue as Float
-                        splashProvider.view.alpha = value
-                    }
-                    doOnEnd {
-                        splashProvider.remove()
-                    }
-                }
-
-                activityAnim.start()
-                splashAnim.start()
-            }
-        }
-    }
-
     private fun handleIntentAction(intent: Intent, navigator: Navigator): Boolean {
         val notificationId = intent.getIntExtra("notificationId", -1)
         if (notificationId > -1) {
@@ -601,7 +573,3 @@ class MainActivity : BaseActivity() {
     }
 }
 
-// Splash screen
-private const val SPLASH_MIN_DURATION = 500 // ms
-private const val SPLASH_MAX_DURATION = 5000 // ms
-private const val SPLASH_EXIT_ANIM_DURATION = 400L // ms

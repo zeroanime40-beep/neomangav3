@@ -16,6 +16,7 @@ import eu.kanade.presentation.browse.SourcesScreen
 import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.components.TabContent
 import eu.kanade.tachiyomi.ui.browse.source.browse.BrowseSourceScreen
+import eu.kanade.tachiyomi.ui.browse.source.browse.BrowseSourceScreenModel.Listing
 import eu.kanade.tachiyomi.ui.browse.source.globalsearch.GlobalSearchScreen
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -57,6 +58,10 @@ fun Screen.sourcesTab(): TabContent {
                 val source = dialog.source
                 SourceOptionsDialog(
                     source = source,
+                    onClickLatest = {
+                        navigator.push(BrowseSourceScreen(source.id, Listing.Latest.query))
+                        screenModel.closeDialog()
+                    },
                     onClickPin = {
                         screenModel.togglePin(source)
                         screenModel.closeDialog()

@@ -32,6 +32,24 @@ import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import java.util.Locale
 
+private val BLOCKED_SOURCE_NAMES = setOf(
+    "Arab Toons", "ArabManhwa", "Arabs Hentai", "ArbxComix", "MangaHub",
+    "Duskoryvile", "Empire Webtoon", "Goon Scans", "Hentai Slayer", "HentaiMan",
+    "MangaTuk", "Manhatic", "Paradise BL", "Yona Bar", "Yuri Moon Sub"
+)
+
+private fun Extension.isBlocked(): Boolean {
+    if (this.name in BLOCKED_SOURCE_NAMES) return true
+    
+    val sourcesList = when (this) {
+        is Extension.Installed -> this.sources.map { it.name }
+        is Extension.Available -> this.sources.map { it.name }
+        else -> emptyList()
+    }
+    
+    return sourcesList.isNotEmpty() && sourcesList.all { it in BLOCKED_SOURCE_NAMES }
+}
+
 /**
  * The manager of extensions installed as another apk which extend the available sources. It handles
  * the retrieval of remotely available extensions as well as installing, updating and removing them.
@@ -114,6 +132,8 @@ class ExtensionManager(
 
     fun getSourceData(id: Long) = availableExtensionsSourcesData[id]
 
+
+
     /**
      * Loads and registers the installed extensions.
      */
@@ -122,10 +142,12 @@ class ExtensionManager(
 
         installedExtensionMapFlow.value = extensions
             .filterIsInstance<LoadResult.Success>()
+            .filterNot { it.extension.isBlocked() }
             .associate { it.extension.pkgName to it.extension }
 
         untrustedExtensionMapFlow.value = extensions
             .filterIsInstance<LoadResult.Untrusted>()
+            .filterNot { it.extension.isBlocked() }
             .associate { it.extension.pkgName to it.extension }
 
         _isInitialized.value = true
@@ -136,7 +158,7 @@ class ExtensionManager(
      */
     suspend fun findAvailableExtensions() {
         val extensions: List<Extension.Available> = try {
-            api.findExtensions()
+            api.findExtensions().filterNot { it.isBlocked() }
         } catch (e: Exception) {
             logcat(LogPriority.ERROR, e)
             withUIContext { context.toast(MR.strings.extension_api_error) }

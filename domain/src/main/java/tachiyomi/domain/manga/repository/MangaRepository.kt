@@ -39,4 +39,10 @@ interface MangaRepository {
     suspend fun updateAll(mangaUpdates: List<MangaUpdate>): Boolean
 
     suspend fun insertNetworkManga(manga: List<Manga>): List<Manga>
+
+    fun subscribeIsTracked(id: Long): Flow<Boolean>
+
+    fun subscribeTrackedManga(): Flow<List<Manga>>
+
+    suspend fun updateTracking(id: Long, isTracked: Boolean)
 }

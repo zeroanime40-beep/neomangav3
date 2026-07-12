@@ -17,9 +17,12 @@ import eu.kanade.tachiyomi.util.system.getParcelableExtraCompat
 import eu.kanade.tachiyomi.util.system.notificationManager
 import eu.kanade.tachiyomi.util.system.toShareIntent
 import eu.kanade.tachiyomi.util.system.toast
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import tachiyomi.core.common.Constants
-import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.domain.chapter.interactor.GetChapter
 import tachiyomi.domain.chapter.interactor.UpdateChapter
 import tachiyomi.domain.chapter.model.Chapter
@@ -197,22 +200,28 @@ class NotificationReceiver : BroadcastReceiver() {
         val downloadPreferences: DownloadPreferences = Injekt.get()
         val sourceManager: SourceManager = Injekt.get()
 
-        launchIO {
-            val toUpdate = chapterUrls.mapNotNull { getChapter.await(it, mangaId) }
-                .map {
-                    val chapter = it.copy(read = true)
-                    if (downloadPreferences.removeAfterMarkedAsRead.get()) {
-                        val manga = getManga.await(mangaId)
-                        if (manga != null) {
-                            val source = sourceManager.get(manga.source)
-                            if (source != null) {
-                                downloadManager.deleteChapters(listOf(it), manga, source)
+        // NEO MANGA: Defer broadcast receiver termination via goAsync
+        val pendingResult = goAsync()
+        CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
+            try {
+                val toUpdate = chapterUrls.mapNotNull { getChapter.await(it, mangaId) }
+                    .map {
+                        val chapter = it.copy(read = true)
+                        if (downloadPreferences.removeAfterMarkedAsRead.get()) {
+                            val manga = getManga.await(mangaId)
+                            if (manga != null) {
+                                val source = sourceManager.get(manga.source)
+                                if (source != null) {
+                                    downloadManager.deleteChapters(listOf(it), manga, source)
+                                }
                             }
                         }
+                        chapter.toChapterUpdate()
                     }
-                    chapter.toChapterUpdate()
-                }
-            updateChapter.awaitAll(toUpdate)
+                updateChapter.awaitAll(toUpdate)
+            } finally {
+                pendingResult.finish()
+            }
         }
     }
 
@@ -223,10 +232,16 @@ class NotificationReceiver : BroadcastReceiver() {
      * @param mangaId id of manga
      */
     private fun downloadChapters(chapterUrls: Array<String>, mangaId: Long) {
-        launchIO {
-            val manga = getManga.await(mangaId) ?: return@launchIO
-            val chapters = chapterUrls.mapNotNull { getChapter.await(it, mangaId) }
-            downloadManager.downloadChapters(manga, chapters)
+        // NEO MANGA: Defer broadcast receiver termination via goAsync
+        val pendingResult = goAsync()
+        CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
+            try {
+                val manga = getManga.await(mangaId) ?: return@launch
+                val chapters = chapterUrls.mapNotNull { getChapter.await(it, mangaId) }
+                downloadManager.downloadChapters(manga, chapters)
+            } finally {
+                pendingResult.finish()
+            }
         }
     }
 

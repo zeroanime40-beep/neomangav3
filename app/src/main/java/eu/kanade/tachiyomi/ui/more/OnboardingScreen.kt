@@ -7,12 +7,7 @@ import androidx.compose.runtime.remember
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import eu.kanade.domain.base.BasePreferences
-import eu.kanade.presentation.more.onboarding.OnboardingScreen
-import eu.kanade.presentation.more.settings.screen.SearchableSettings
-import eu.kanade.presentation.more.settings.screen.SettingsDataScreen
 import eu.kanade.presentation.util.Screen
-import eu.kanade.tachiyomi.ui.setting.SettingsScreen
-import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.collectAsState
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
@@ -31,19 +26,13 @@ class OnboardingScreen : Screen() {
             navigator.pop()
         }
 
-        val restoreSettingKey = stringResource(SettingsDataScreen.restorePreferenceKeyString)
-
         BackHandler(enabled = !shownOnboardingFlow) {
             // Prevent exiting if onboarding hasn't been completed
         }
 
-        OnboardingScreen(
+        // NEO MANGA: Route to premium onboarding overlay
+        NeoMangaOnboarding(
             onComplete = finishOnboarding,
-            onRestoreBackup = {
-                finishOnboarding()
-                SearchableSettings.highlightKey = restoreSettingKey
-                navigator.push(SettingsScreen(SettingsScreen.Destination.DataAndStorage))
-            },
         )
     }
 }

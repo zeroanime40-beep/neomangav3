@@ -295,11 +295,12 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
 
         notifier.cancelProgressNotification()
 
-        if (newUpdates.isNotEmpty()) {
-            notifier.showUpdateNotifications(newUpdates)
-            if (hasDownloads.load()) {
-                downloadManager.startDownloads()
-            }
+        val trackedNewUpdates = newUpdates.filter { it.first.isTracked }
+        if (trackedNewUpdates.isNotEmpty()) {
+            notifier.showUpdateNotifications(trackedNewUpdates)
+        }
+        if (newUpdates.isNotEmpty() && hasDownloads.load()) {
+            downloadManager.startDownloads()
         }
 
         if (failedUpdates.isNotEmpty()) {

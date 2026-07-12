@@ -42,6 +42,7 @@ data class Manga(
     val version: Long,
     val notes: String,
     val memo: JsonObject,
+    val isTracked: Boolean,
 ) : JavaSerializable {
 
     val expectedNextUpdate: Instant?
@@ -138,6 +139,7 @@ data class Manga(
             version = 0L,
             notes = "",
             memo = JsonObject.EMPTY,
+            isTracked = false,
         )
     }
 

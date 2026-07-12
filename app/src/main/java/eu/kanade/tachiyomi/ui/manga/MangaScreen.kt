@@ -3,6 +3,7 @@ package eu.kanade.tachiyomi.ui.manga
 import android.content.Context
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -33,6 +34,7 @@ import eu.kanade.presentation.manga.DuplicateMangaDialog
 import eu.kanade.presentation.manga.EditCoverAction
 import eu.kanade.presentation.manga.MangaScreen
 import eu.kanade.presentation.manga.components.DeleteChaptersDialog
+import eu.kanade.presentation.manga.components.TrackingOnboardingDialog
 import eu.kanade.presentation.manga.components.MangaCoverDialog
 import eu.kanade.presentation.manga.components.ScanlatorFilterDialog
 import eu.kanade.presentation.manga.components.SetIntervalDialog
@@ -146,6 +148,10 @@ class MangaScreen(
                     screenModel.showTrackDialog()
                 }
             },
+            onTrackClicked = {
+                screenModel.toggleTracking()
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            },
             onTagSearch = { scope.launch { performGenreSearch(navigator, it, screenModel.source!!) } },
             onFilterButtonClicked = screenModel::showSettingsDialog,
             onRefresh = screenModel::fetchAllFromSource,
@@ -177,6 +183,15 @@ class MangaScreen(
         val onDismissRequest = { screenModel.dismissDialog() }
         when (val dialog = successState.dialog) {
             null -> {}
+            is MangaScreenModel.Dialog.TrackingOnboarding -> {
+                TrackingOnboardingDialog(
+                    manga = dialog.manga,
+                    onDismissRequest = onDismissRequest,
+                    onConfirm = { enableTracking ->
+                        screenModel.confirmFavoriteWithTracking(dialog.manga, enableTracking)
+                    }
+                )
+            }
             is MangaScreenModel.Dialog.ChangeCategory -> {
                 ChangeCategoryDialog(
                     initialSelection = dialog.initialSelection,

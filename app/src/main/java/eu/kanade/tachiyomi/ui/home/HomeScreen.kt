@@ -75,6 +75,7 @@ object HomeScreen : Screen() {
         LibraryTab,
         UpdatesTab,
         HistoryTab,
+        eu.kanade.tachiyomi.ui.dashboard.DashboardTab,
         BrowseTab,
         MoreTab,
     )
@@ -91,7 +92,9 @@ object HomeScreen : Screen() {
                 Scaffold(
                     startBar = {
                         if (isTabletUi()) {
-                            NavigationRail {
+                            NavigationRail(
+                                containerColor = androidx.compose.ui.graphics.Color(0xFF000000)
+                            ) {
                                 TABS.fastForEach {
                                     NavigationRailItem(it)
                                 }
@@ -108,7 +111,9 @@ object HomeScreen : Screen() {
                                 enter = expandVertically(),
                                 exit = shrinkVertically(),
                             ) {
-                                NavigationBar {
+                                NavigationBar(
+                                    containerColor = androidx.compose.ui.graphics.Color(0xFF000000)
+                                ) {
                                     TABS.fastForEach {
                                         NavigationBarItem(it)
                                     }
@@ -202,6 +207,13 @@ object HomeScreen : Screen() {
                 )
             },
             alwaysShowLabel = true,
+            colors = androidx.compose.material3.NavigationBarItemDefaults.colors(
+                indicatorColor = androidx.compose.ui.graphics.Color(0xFF00E5FF).copy(alpha = 0.15f),
+                selectedIconColor = androidx.compose.ui.graphics.Color(0xFF00E5FF),
+                selectedTextColor = androidx.compose.ui.graphics.Color(0xFF00E5FF),
+                unselectedIconColor = androidx.compose.ui.graphics.Color.Gray,
+                unselectedTextColor = androidx.compose.ui.graphics.Color.Gray
+            )
         )
     }
 
@@ -230,6 +242,13 @@ object HomeScreen : Screen() {
                 )
             },
             alwaysShowLabel = true,
+            colors = androidx.compose.material3.NavigationRailItemDefaults.colors(
+                indicatorColor = androidx.compose.ui.graphics.Color(0xFF00E5FF).copy(alpha = 0.15f),
+                selectedIconColor = androidx.compose.ui.graphics.Color(0xFF00E5FF),
+                selectedTextColor = androidx.compose.ui.graphics.Color(0xFF00E5FF),
+                unselectedIconColor = androidx.compose.ui.graphics.Color.Gray,
+                unselectedTextColor = androidx.compose.ui.graphics.Color.Gray
+            )
         )
     }
 

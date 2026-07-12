@@ -97,7 +97,8 @@ internal class DownloadNotifier(private val context: Context) {
             )
 
             if (preferences.hideNotificationContent.get()) {
-                setContentTitle(downloadingProgressText)
+                // NEO MANGA: Brand injection
+                setContentTitle("NEO MANGA: " + downloadingProgressText)
                 setContentText(null)
             } else {
                 val title = download.manga.title.chop(15)
@@ -106,7 +107,8 @@ internal class DownloadNotifier(private val context: Context) {
                     "$quotedTitle[\\s]*[-]*[\\s]*".toRegex(RegexOption.IGNORE_CASE),
                     "",
                 )
-                setContentTitle("$title - $chapter".chop(30))
+                // NEO MANGA: Brand injection
+                setContentTitle("NEO MANGA: " + "$title - $chapter".chop(30))
                 setContentText(downloadingProgressText)
             }
 
@@ -122,7 +124,8 @@ internal class DownloadNotifier(private val context: Context) {
      */
     fun onPaused() {
         with(progressNotificationBuilder) {
-            setContentTitle(context.stringResource(MR.strings.chapter_paused))
+            // NEO MANGA: Brand injection
+            setContentTitle("NEO MANGA: " + context.stringResource(MR.strings.chapter_paused))
             setContentText(context.stringResource(MR.strings.download_notifier_download_paused))
             setSmallIcon(R.drawable.ic_pause_24dp)
             setProgress(0, 0, false)
@@ -170,7 +173,8 @@ internal class DownloadNotifier(private val context: Context) {
      */
     fun onWarning(reason: String, timeout: Long? = null, contentIntent: PendingIntent? = null, mangaId: Long? = null) {
         with(errorNotificationBuilder) {
-            setContentTitle(context.stringResource(MR.strings.download_notifier_downloader_title))
+            // NEO MANGA: Brand injection
+            setContentTitle("NEO MANGA: " + context.stringResource(MR.strings.download_notifier_downloader_title))
             setStyle(NotificationCompat.BigTextStyle().bigText(reason))
             setSmallIcon(R.drawable.ic_warning_white_24dp)
             setAutoCancel(true)
@@ -205,8 +209,9 @@ internal class DownloadNotifier(private val context: Context) {
     fun onError(error: String? = null, chapter: String? = null, mangaTitle: String? = null, mangaId: Long? = null) {
         // Create notification
         with(errorNotificationBuilder) {
+            // NEO MANGA: Brand injection
             setContentTitle(
-                mangaTitle?.plus(": $chapter") ?: context.stringResource(MR.strings.download_notifier_downloader_title),
+                "NEO MANGA: " + (mangaTitle?.plus(": $chapter") ?: context.stringResource(MR.strings.download_notifier_downloader_title)),
             )
             setContentText(error ?: context.stringResource(MR.strings.download_notifier_unknown_error))
             setSmallIcon(R.drawable.ic_warning_white_24dp)

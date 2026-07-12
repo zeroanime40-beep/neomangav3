@@ -1,46 +1,68 @@
 package eu.kanade.presentation.updates
 
-import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.CalendarMonth
-import androidx.compose.material.icons.outlined.FilterList
-import androidx.compose.material.icons.outlined.FlipToBack
-import androidx.compose.material.icons.outlined.Refresh
-import androidx.compose.material.icons.outlined.SelectAll
-import androidx.compose.material3.LocalContentColor
+import androidx.compose.material.icons.outlined.Sync
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.TopAppBarScrollBehavior
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.util.fastAll
-import androidx.compose.ui.util.fastAny
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import coil3.compose.AsyncImage
+import coil3.request.ImageRequest
+import coil3.request.crossfade
 import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.components.AppBarActions
-import eu.kanade.presentation.manga.components.ChapterDownloadAction
-import eu.kanade.presentation.manga.components.MangaBottomActionMenu
-import eu.kanade.tachiyomi.data.download.model.Download
-import eu.kanade.tachiyomi.ui.updates.UpdatesItem
 import eu.kanade.tachiyomi.ui.updates.UpdatesScreenModel
+import eu.kanade.tachiyomi.ui.updates.UpdatesTrackedUiModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import tachiyomi.i18n.MR
-import tachiyomi.presentation.core.components.FastScrollLazyColumn
 import tachiyomi.presentation.core.components.material.PullRefresh
 import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.screens.EmptyScreen
 import tachiyomi.presentation.core.screens.LoadingScreen
-import tachiyomi.presentation.core.theme.active
-import java.time.LocalDate
 import kotlin.time.Duration.Companion.seconds
 
 @Composable
@@ -48,86 +70,195 @@ fun UpdateScreen(
     state: UpdatesScreenModel.State,
     snackbarHostState: SnackbarHostState,
     lastUpdated: Long,
-    onClickCover: (UpdatesItem) -> Unit,
-    onSelectAll: (Boolean) -> Unit,
-    onInvertSelection: () -> Unit,
-    onCalendarClicked: () -> Unit,
+    onClickCard: (Long) -> Unit,
     onUpdateLibrary: () -> Boolean,
-    onDownloadChapter: (List<UpdatesItem>, ChapterDownloadAction) -> Unit,
-    onMultiBookmarkClicked: (List<UpdatesItem>, bookmark: Boolean) -> Unit,
-    onMultiMarkAsReadClicked: (List<UpdatesItem>, read: Boolean) -> Unit,
-    onMultiDeleteClicked: (List<UpdatesItem>) -> Unit,
-    onUpdateSelected: (UpdatesItem, Boolean, Boolean) -> Unit,
-    onOpenChapter: (UpdatesItem) -> Unit,
-    onFilterClicked: () -> Unit,
-    hasActiveFilters: Boolean,
 ) {
-    BackHandler(enabled = state.selectionMode) {
-        onSelectAll(false)
-    }
+    val cyberTeal = Color(0xFF00E5FF)
+    val cyberTealTranslucent = Color(0x3300E5FF)
 
     Scaffold(
         topBar = { scrollBehavior ->
-            UpdatesAppBar(
-                onCalendarClicked = { onCalendarClicked() },
-                onUpdateLibrary = { onUpdateLibrary() },
-                onFilterClicked = { onFilterClicked() },
-                hasFilters = hasActiveFilters,
-                actionModeCounter = state.selected.size,
-                onSelectAll = { onSelectAll(true) },
-                onInvertSelection = { onInvertSelection() },
-                onCancelActionMode = { onSelectAll(false) },
+            AppBar(
+                title = stringResource(MR.strings.label_recent_updates),
+                actions = {
+                    AppBarActions(
+                        listOf(
+                            AppBar.Action(
+                                title = stringResource(MR.strings.action_update_library),
+                                icon = Icons.Outlined.Sync,
+                                onClick = { onUpdateLibrary() },
+                            )
+                        )
+                    )
+                },
                 scrollBehavior = scrollBehavior,
-            )
-        },
-        bottomBar = {
-            UpdatesBottomBar(
-                selected = state.selected,
-                onDownloadChapter = onDownloadChapter,
-                onMultiBookmarkClicked = onMultiBookmarkClicked,
-                onMultiMarkAsReadClicked = onMultiMarkAsReadClicked,
-                onMultiDeleteClicked = onMultiDeleteClicked,
             )
         },
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
     ) { contentPadding ->
-        when {
-            state.isLoading -> LoadingScreen(Modifier.padding(contentPadding))
-            state.items.isEmpty() -> EmptyScreen(
-                stringRes = MR.strings.information_no_recent,
-                modifier = Modifier.padding(contentPadding),
-            )
-            else -> {
-                val scope = rememberCoroutineScope()
-                var isRefreshing by remember { mutableStateOf(false) }
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black)
+                .padding(contentPadding)
+        ) {
+            when {
+                state.isLoading -> LoadingScreen()
+                state.items.isEmpty() -> {
+                    EmptyScreen(
+                        stringRes = MR.strings.information_no_recent,
+                    )
+                }
+                else -> {
+                    val scope = rememberCoroutineScope()
+                    var isRefreshing by remember { mutableStateOf(false) }
 
-                PullRefresh(
-                    refreshing = isRefreshing,
-                    onRefresh = {
-                        val started = onUpdateLibrary()
-                        if (!started) return@PullRefresh
-                        scope.launch {
-                            // Fake refresh status but hide it after a second as it's a long running task
-                            isRefreshing = true
-                            delay(1.seconds)
-                            isRefreshing = false
-                        }
-                    },
-                    enabled = !state.selectionMode,
-                    indicatorPadding = contentPadding,
-                ) {
-                    FastScrollLazyColumn(
-                        contentPadding = contentPadding,
+                    PullRefresh(
+                        refreshing = isRefreshing,
+                        onRefresh = {
+                            val started = onUpdateLibrary()
+                            if (!started) return@PullRefresh
+                            scope.launch {
+                                isRefreshing = true
+                                delay(1.seconds)
+                                isRefreshing = false
+                            }
+                        },
+                        enabled = true,
                     ) {
-                        updatesLastUpdatedItem(lastUpdated)
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(bottom = 16.dp),
+                        ) {
+                            items(
+                                items = state.items,
+                                key = { it.mangaId }
+                            ) { item ->
+                                UpdatesTrackedCard(
+                                    item = item,
+                                    cyberTeal = cyberTeal,
+                                    cyberTealTranslucent = cyberTealTranslucent,
+                                    onClick = onClickCard
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
 
-                        updatesUiItems(
-                            uiModels = state.getUiModel(),
-                            selectionMode = state.selectionMode,
-                            onUpdateSelected = onUpdateSelected,
-                            onClickCover = onClickCover,
-                            onClickUpdate = onOpenChapter,
-                            onDownloadChapter = onDownloadChapter,
+@Composable
+private fun UpdatesTrackedCard(
+    item: UpdatesTrackedUiModel,
+    cyberTeal: Color,
+    cyberTealTranslucent: Color,
+    onClick: (Long) -> Unit,
+) {
+    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .height(180.dp)
+                .clickable { onClick(item.mangaId) },
+            colors = CardDefaults.cardColors(containerColor = Color.DarkGray),
+            shape = RoundedCornerShape(16.dp),
+            border = BorderStroke(1.dp, cyberTealTranslucent)
+        ) {
+            Box(modifier = Modifier.fillMaxSize()) {
+                AsyncImage(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(item.thumbnailUrl)
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = null,
+                    placeholder = androidx.compose.ui.graphics.painter.ColorPainter(Color.DarkGray),
+                    fallback = androidx.compose.ui.graphics.painter.ColorPainter(Color.DarkGray),
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+
+                // Background Gradient overlay
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.98f)),
+                                startY = 80f
+                            )
+                        )
+                )
+
+                // Cyber-Teal LinearProgressIndicator displaying the reading progress percentage over the card surface
+                LinearProgressIndicator(
+                    progress = { item.readProgress },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .align(Alignment.BottomCenter)
+                        .height(6.dp),
+                    color = cyberTeal,
+                    trackColor = Color.Transparent,
+                )
+
+                // Content Column (Right-aligned / RTL scope)
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.SpaceBetween
+                ) {
+                    // Top Row: Badges
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Right-aligned permanent badge: "جاري التتبع"
+                        BadgeText(
+                            text = "جاري التتبع",
+                            backgroundColor = cyberTealTranslucent,
+                            textColor = cyberTeal
+                        )
+
+                        // Left-aligned badge indicating unread chapters count (if any)
+                        if (item.unreadCount > 0) {
+                            BadgeText(
+                                text = "${item.unreadCount} جديد",
+                                backgroundColor = Color.Red.copy(alpha = 0.2f),
+                                textColor = Color.Red
+                            )
+                        } else {
+                            BadgeText(
+                                text = "مكتمل القراءة",
+                                backgroundColor = Color.Gray.copy(alpha = 0.2f),
+                                textColor = Color.LightGray
+                            )
+                        }
+                    }
+
+                    // Bottom Section: Title and Progress Text
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 8.dp)
+                    ) {
+                        Text(
+                            text = item.title,
+                            color = Color.White,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "نسبة القراءة: ${(item.readProgress * 100).toInt()}%",
+                            color = Color.LightGray.copy(alpha = 0.7f),
+                            style = MaterialTheme.typography.bodySmall,
+                            fontSize = 11.sp
                         )
                     }
                 }
@@ -137,101 +268,18 @@ fun UpdateScreen(
 }
 
 @Composable
-private fun UpdatesAppBar(
-    onCalendarClicked: () -> Unit,
-    onUpdateLibrary: () -> Unit,
-    onFilterClicked: () -> Unit,
-    hasFilters: Boolean,
-    // For action mode
-    actionModeCounter: Int,
-    onSelectAll: () -> Unit,
-    onInvertSelection: () -> Unit,
-    onCancelActionMode: () -> Unit,
-    scrollBehavior: TopAppBarScrollBehavior,
-    modifier: Modifier = Modifier,
+private fun BadgeText(
+    text: String,
+    backgroundColor: Color,
+    textColor: Color,
 ) {
-    AppBar(
-        modifier = modifier,
-        title = stringResource(MR.strings.label_recent_updates),
-        actions = {
-            AppBarActions(
-                listOf(
-                    AppBar.Action(
-                        title = stringResource(MR.strings.action_filter),
-                        icon = Icons.Outlined.FilterList,
-                        iconTint = if (hasFilters) MaterialTheme.colorScheme.active else LocalContentColor.current,
-                        onClick = onFilterClicked,
-                    ),
-                    AppBar.Action(
-                        title = stringResource(MR.strings.action_view_upcoming),
-                        icon = Icons.Outlined.CalendarMonth,
-                        onClick = onCalendarClicked,
-                    ),
-                    AppBar.Action(
-                        title = stringResource(MR.strings.action_update_library),
-                        icon = Icons.Outlined.Refresh,
-                        onClick = onUpdateLibrary,
-                    ),
-                ),
-            )
-        },
-        actionModeCounter = actionModeCounter,
-        onCancelActionMode = onCancelActionMode,
-        actionModeActions = {
-            AppBarActions(
-                listOf(
-                    AppBar.Action(
-                        title = stringResource(MR.strings.action_select_all),
-                        icon = Icons.Outlined.SelectAll,
-                        onClick = onSelectAll,
-                    ),
-                    AppBar.Action(
-                        title = stringResource(MR.strings.action_select_inverse),
-                        icon = Icons.Outlined.FlipToBack,
-                        onClick = onInvertSelection,
-                    ),
-                ),
-            )
-        },
-        scrollBehavior = scrollBehavior,
+    Text(
+        text = text,
+        color = textColor,
+        fontSize = 10.sp,
+        fontWeight = FontWeight.SemiBold,
+        modifier = Modifier
+            .background(backgroundColor, RoundedCornerShape(4.dp))
+            .padding(horizontal = 8.dp, vertical = 4.dp)
     )
-}
-
-@Composable
-private fun UpdatesBottomBar(
-    selected: List<UpdatesItem>,
-    onDownloadChapter: (List<UpdatesItem>, ChapterDownloadAction) -> Unit,
-    onMultiBookmarkClicked: (List<UpdatesItem>, bookmark: Boolean) -> Unit,
-    onMultiMarkAsReadClicked: (List<UpdatesItem>, read: Boolean) -> Unit,
-    onMultiDeleteClicked: (List<UpdatesItem>) -> Unit,
-) {
-    MangaBottomActionMenu(
-        visible = selected.isNotEmpty(),
-        modifier = Modifier.fillMaxWidth(),
-        onBookmarkClicked = {
-            onMultiBookmarkClicked.invoke(selected, true)
-        }.takeIf { selected.fastAny { !it.update.bookmark } },
-        onRemoveBookmarkClicked = {
-            onMultiBookmarkClicked.invoke(selected, false)
-        }.takeIf { selected.fastAll { it.update.bookmark } },
-        onMarkAsReadClicked = {
-            onMultiMarkAsReadClicked(selected, true)
-        }.takeIf { selected.fastAny { !it.update.read } },
-        onMarkAsUnreadClicked = {
-            onMultiMarkAsReadClicked(selected, false)
-        }.takeIf { selected.fastAny { it.update.read || it.update.lastPageRead > 0L } },
-        onDownloadClicked = {
-            onDownloadChapter(selected, ChapterDownloadAction.START)
-        }.takeIf {
-            selected.fastAny { it.downloadStateProvider() != Download.State.DOWNLOADED }
-        },
-        onDeleteClicked = {
-            onMultiDeleteClicked(selected)
-        }.takeIf { selected.fastAny { it.downloadStateProvider() == Download.State.DOWNLOADED } },
-    )
-}
-
-sealed interface UpdatesUiModel {
-    data class Header(val date: LocalDate) : UpdatesUiModel
-    data class Item(val item: UpdatesItem) : UpdatesUiModel
 }

@@ -20,15 +20,16 @@ import androidx.compose.runtime.CompositionContext
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
-import eu.kanade.presentation.theme.TachiyomiTheme
+// NEO MANGA: Global Theme Injection. Replaced legacy TachiyomiTheme with NeoMangaTheme to establish baseline design architecture.
 import eu.kanade.tachiyomi.R
+import tachiyomi.presentation.core.theme.NeoMangaTheme
 
 inline fun ComponentActivity.setComposeContent(
     parent: CompositionContext? = null,
     crossinline content: @Composable () -> Unit,
 ) {
     setContent(parent) {
-        TachiyomiTheme {
+        NeoMangaTheme {
             CompositionLocalProvider(
                 LocalTextStyle provides MaterialTheme.typography.bodySmall,
                 LocalContentColor provides MaterialTheme.colorScheme.onBackground,
@@ -44,7 +45,7 @@ fun ComposeView.setComposeContent(
 ) {
     setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
     setContent {
-        TachiyomiTheme {
+        NeoMangaTheme {
             CompositionLocalProvider(
                 LocalTextStyle provides MaterialTheme.typography.bodySmall,
                 LocalContentColor provides MaterialTheme.colorScheme.onBackground,

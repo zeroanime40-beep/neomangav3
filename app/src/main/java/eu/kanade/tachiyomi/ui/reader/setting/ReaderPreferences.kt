@@ -52,9 +52,10 @@ class ReaderPreferences(
 
     val keepScreenOn: Preference<Boolean> = preferenceStore.getBoolean("pref_keep_screen_on_key", false)
 
+    // NEO MANGA: Enforce CONTINUOUS_VERTICAL as default UX reading mode
     val defaultReadingMode: Preference<Int> = preferenceStore.getInt(
         "pref_default_reading_mode_key",
-        ReadingMode.RIGHT_TO_LEFT.flagValue,
+        ReadingMode.CONTINUOUS_VERTICAL.flagValue,
     )
 
     val defaultOrientationType: Preference<Int> = preferenceStore.getInt(

@@ -1,3 +1,4 @@
+// NEO MANGA: OledScaffold injected to extend premium visual specs over repo management
 package eu.kanade.presentation.more.settings.screen.browse.components
 
 import androidx.compose.foundation.layout.PaddingValues
@@ -15,7 +16,7 @@ import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.more.settings.screen.browse.ExtensionStoreScreenState
 import mihon.domain.extension.model.ExtensionStore
 import tachiyomi.i18n.MR
-import tachiyomi.presentation.core.components.material.Scaffold
+import tachiyomi.presentation.core.components.OledScaffold
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.components.material.topSmallPaddingValues
 import tachiyomi.presentation.core.i18n.stringResource
@@ -34,12 +35,11 @@ fun ExtensionStoresScreen(
     navigateUp: () -> Unit,
 ) {
     val lazyListState = rememberLazyListState()
-    Scaffold(
-        topBar = { scrollBehavior ->
+    OledScaffold(
+        topBar = {
             AppBar(
                 navigateUp = navigateUp,
                 title = stringResource(MR.strings.extensionStores),
-                scrollBehavior = scrollBehavior,
                 actions = {
                     IconButton(onClick = onClickRefresh) {
                         Icon(
@@ -62,7 +62,7 @@ fun ExtensionStoresScreen(
                 MR.strings.extensionStoresScreen_emptyLabel,
                 modifier = Modifier.padding(paddingValues),
             )
-            return@Scaffold
+            return@OledScaffold
         }
 
         ExtensionStoresContent(
