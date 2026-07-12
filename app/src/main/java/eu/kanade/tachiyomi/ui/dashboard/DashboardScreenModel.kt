@@ -26,7 +26,8 @@ class DashboardScreenModel(
         val featuredMangaList: List<Manga> = emptyList(),
         val recommendations: List<Manga> = emptyList(),
         val needsCatalogRefresh: Boolean = true,
-        val isLoading: Boolean = false // Strict 0ms loading
+        val isLoading: Boolean = false, // Strict 0ms loading
+        val prioritySourceId: Long? = null
     )
 
     fun refreshCatalog() {
@@ -45,6 +46,16 @@ class DashboardScreenModel(
     }
 
     init {
+        // Resolve target source ID for nativeCatalogue navigation
+        screenModelScope.launch {
+            try {
+                val sourceId = getGlobalCatalog.getPrioritySourceId("Team X")
+                mutableState.value = state.value.copy(prioritySourceId = sourceId)
+            } catch (e: Exception) {
+                // Ignore
+            }
+        }
+
         // Immediate, reactive history stream
         screenModelScope.launch {
             getHistory.subscribe("")

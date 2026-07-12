@@ -178,4 +178,15 @@ class GetUnifiedGlobalCatalogUseCase(
         val mergedList = results.flatten().distinctBy { it.id }
         emit(mergedList)
     }
+
+    suspend fun getPrioritySourceId(prioritySourceName: String): Long? = withContext(Dispatchers.IO) {
+        val enabledSources = getEnabledSources.subscribe().first()
+        val prioritySource = enabledSources
+            .mapNotNull { sourceManager.get(it.id) as? CatalogueSource }
+            .firstOrNull { it.name.equals(prioritySourceName, ignoreCase = true) }
+            ?: enabledSources
+                .mapNotNull { sourceManager.get(it.id) as? CatalogueSource }
+                .firstOrNull()
+        prioritySource?.id
+    }
 }

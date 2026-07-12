@@ -61,6 +61,7 @@ import coil3.request.crossfade
 import eu.kanade.presentation.components.AppBar
 import eu.kanade.tachiyomi.ui.manga.MangaScreen
 import eu.kanade.tachiyomi.ui.reader.ReaderActivity
+import eu.kanade.tachiyomi.ui.browse.source.browse.BrowseSourceScreen
 
 class DashboardScreen : Screen {
 
@@ -133,7 +134,7 @@ class DashboardScreen : Screen {
 
                     // 4. Manga Recommendations Section (اقتراحات الأعمال)
                     item {
-                        RecommendationsSection(state.recommendations, cyberTeal, cyberTealTranslucent, navigator)
+                        RecommendationsSection(state.recommendations, state.prioritySourceId, cyberTeal, cyberTealTranslucent, navigator)
                     }
                     
                     // 5. Explore Other Sources Button
@@ -544,6 +545,7 @@ class DashboardScreen : Screen {
     @Composable
     private fun RecommendationsSection(
         recommendations: List<tachiyomi.domain.manga.model.Manga>,
+        prioritySourceId: Long?,
         cyberTeal: Color,
         cyberTealTranslucent: Color,
         navigator: cafe.adriel.voyager.navigator.Navigator
@@ -555,7 +557,11 @@ class DashboardScreen : Screen {
                 title = "اقتراحات الأعمال",
                 cyberTeal = cyberTeal,
                 actionLabel = "عرض كل الاقتراحات",
-                onActionClick = { navigator.push(eu.kanade.tachiyomi.ui.recommendations.RecommendationsScreen()) }
+                onActionClick = {
+                    prioritySourceId?.let { sourceId ->
+                        navigator.push(BrowseSourceScreen(sourceId, null))
+                    }
+                }
             )
             Spacer(modifier = Modifier.height(12.dp))
             LazyRow(
