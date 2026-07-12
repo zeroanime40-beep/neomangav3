@@ -167,7 +167,7 @@ class MainActivity : BaseActivity() {
         lifecycleScope.launch {
             try {
                 val getGlobalCatalog: eu.kanade.domain.source.interactor.GetUnifiedGlobalCatalogUseCase = uy.kohesive.injekt.Injekt.get()
-                getGlobalCatalog.preloadPriorityCatalog("Team X")
+                getGlobalCatalog.ensurePriorityCatalogLoaded("Team X")
             } catch (e: Exception) {
                 // Ignore failure
             }

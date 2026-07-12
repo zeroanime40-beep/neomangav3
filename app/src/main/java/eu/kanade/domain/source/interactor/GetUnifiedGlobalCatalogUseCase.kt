@@ -14,6 +14,8 @@ import mihon.domain.manga.model.toDomainManga
 import tachiyomi.domain.manga.interactor.NetworkToLocalManga
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.source.service.SourceManager
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.util.concurrent.atomic.AtomicReference
 
 class GetUnifiedGlobalCatalogUseCase(
@@ -27,32 +29,66 @@ class GetUnifiedGlobalCatalogUseCase(
 
     private val cachedPriorityMangas = AtomicReference<List<Manga>?>(null)
     private val rawPool = AtomicReference<List<Manga>?>(null)
+    private val loadMutex = Mutex()
 
-    suspend fun preloadPriorityCatalog(prioritySourceName: String) = withContext(Dispatchers.IO) {
-        if (rawPool.get() != null) return@withContext
-        try {
-            val enabledSources = getEnabledSources.subscribe().first()
-            val prioritySource = enabledSources
-                .mapNotNull { sourceManager.get(it.id) as? CatalogueSource }
-                .firstOrNull { it.name.equals(prioritySourceName, ignoreCase = true) }
+    suspend fun ensurePriorityCatalogLoaded(prioritySourceName: String): List<Manga> = withContext(Dispatchers.IO) {
+        val current = rawPool.get()
+        if (current != null) return@withContext current
+
+        loadMutex.withLock {
+            val doubleCheck = rawPool.get()
+            if (doubleCheck != null) return@withLock doubleCheck
+
+            var prioritySource: CatalogueSource? = null
+            var attempts = 0
+            while (prioritySource == null && attempts < 3) {
+                val enabledSources = withTimeoutOrNull(5000L) {
+                    getEnabledSources.subscribe().first()
+                } ?: emptyList()
+
+                prioritySource = enabledSources
+                    .mapNotNull { sourceManager.get(it.id) as? CatalogueSource }
+                    .firstOrNull { it.name.equals(prioritySourceName, ignoreCase = true) }
+
+                if (prioritySource == null) {
+                    attempts++
+                    if (attempts < 3) {
+                        kotlinx.coroutines.delay(1000L)
+                    }
+                }
+            }
+
+            if (prioritySource == null) {
+                val enabledSources = getEnabledSources.subscribe().first()
+                prioritySource = enabledSources
+                    .mapNotNull { sourceManager.get(it.id) as? CatalogueSource }
+                    .firstOrNull()
+            }
 
             if (prioritySource != null) {
-                // Eagerly preload Page 1 and Page 2
-                val networkMangas1 = prioritySource.getPopularManga(1).mangas
-                val networkMangas2 = prioritySource.getPopularManga(2).mangas
-                
-                val domainMangas1 = networkMangas1.map { it.toDomainManga(prioritySource.id) }
-                val domainMangas2 = networkMangas2.map { it.toDomainManga(prioritySource.id) }
-                
-                val persistentMangas1 = networkToLocalManga.invoke(domainMangas1)
-                val persistentMangas2 = networkToLocalManga.invoke(domainMangas2)
-                
-                val combined = persistentMangas1 + persistentMangas2
-                rawPool.set(combined)
-                cachedPriorityMangas.set(persistentMangas1)
+                try {
+                    val networkMangas1 = prioritySource.getPopularManga(1).mangas
+                    val networkMangas2 = prioritySource.getPopularManga(2).mangas
+                    val networkMangas3 = prioritySource.getPopularManga(3).mangas
+                    
+                    val domainMangas1 = networkMangas1.map { it.toDomainManga(prioritySource.id) }
+                    val domainMangas2 = networkMangas2.map { it.toDomainManga(prioritySource.id) }
+                    val domainMangas3 = networkMangas3.map { it.toDomainManga(prioritySource.id) }
+                    
+                    val persistentMangas1 = networkToLocalManga.invoke(domainMangas1)
+                    val persistentMangas2 = networkToLocalManga.invoke(domainMangas2)
+                    val persistentMangas3 = networkToLocalManga.invoke(domainMangas3)
+                    
+                    val combined = persistentMangas1 + persistentMangas2 + persistentMangas3
+                    rawPool.set(combined)
+                    cachedPriorityMangas.set(persistentMangas1)
+                    combined
+                } catch (e: Exception) {
+                    emptyList()
+                }
+            } else {
+                emptyList()
             }
-        } catch (e: Exception) {
-            // Silently fail prefetch
         }
     }
 

@@ -107,7 +107,9 @@ class RecommendationsScreen : Screen {
                                     val firstVisible = visibleItems.first().index
                                     val lastVisible = visibleItems.last().index
                                     when {
-                                        lastVisible >= totalItemsCount - 5 -> ScrollBoundary.BOTTOM
+                                        lastVisible >= totalItemsCount - 5 -> {
+                                            if (state.isInitialHydrationComplete) ScrollBoundary.BOTTOM else ScrollBoundary.NONE
+                                        }
                                         firstVisible <= 5 -> ScrollBoundary.TOP
                                         else -> ScrollBoundary.NONE
                                     }

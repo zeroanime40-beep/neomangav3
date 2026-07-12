@@ -86,7 +86,7 @@ class DashboardScreenModel(
             while (!success && attempts < 3) {
                 try {
                     // Exclusively pull from "Team X" catalog via GetUnifiedGlobalCatalogUseCase priority cache
-                    getGlobalCatalog.preloadPriorityCatalog("Team X")
+                    getGlobalCatalog.ensurePriorityCatalogLoaded("Team X")
                     getGlobalCatalog.await(1).collect { cached ->
                         if (cached.isNotEmpty()) {
                             refreshCatalog()
