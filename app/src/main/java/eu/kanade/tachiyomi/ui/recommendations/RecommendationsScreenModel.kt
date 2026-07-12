@@ -21,6 +21,7 @@ class RecommendationsScreenModel(
 
     private val isFetchingPage = AtomicBoolean(false)
     private val cacheMutex = Mutex()
+    private var nextPageToFetch = 4
     private var windowStart = 0
     private val masterCache = mutableListOf<RecommendationsUiModel>()
 
@@ -186,7 +187,7 @@ class RecommendationsScreenModel(
             if (windowStart + 60 >= cacheSize - 20 && !state.value.hasReachedEnd) {
                 if (isFetchingPage.compareAndSet(false, true)) {
                     mutableState.update { it.copy(isSecondaryLoading = true) }
-                    val currentFetchPage = (cacheSize / 20) + 1
+                    val currentFetchPage = nextPageToFetch
                     try {
                         getUnifiedGlobalCatalogUseCase.fetchCatalogPagesBulk(currentFetchPage, 3)
                             .collectLatest { networkMangas ->
@@ -200,6 +201,8 @@ class RecommendationsScreenModel(
                                     isFetchingPage.set(false)
                                     return@collectLatest
                                 }
+
+                                nextPageToFetch = currentFetchPage + 3
 
                                 val newUiModels = networkMangas.map { manga ->
                                     RecommendationsUiModel(
