@@ -1,6 +1,6 @@
 # Neo Manga Frontend Extension — Architecture, Networking & Hotlink Bypass Plan
 **Author:** Elite Senior Systems Architect & Lead Developer  
-**Status:** MeshManga Staging Integration (Olympus Paused)  
+**Status:** MeshManga Active, Olympus Paused for Isolated Verification  
 **Date:** July 13, 2026
 
 ---
@@ -214,6 +214,13 @@ Many manga sources use Cloudflare to protect against bots and scraping.
 ---
 
 ## 5. Client Future Roadmap
+
+### Tomorrow's Architectural Roadmap
+
+1. **Unpause the First Source**: Re-enable the Olympus Staff extension (`masterSource`) registration within `AndroidSourceManager.kt`.
+2. **Multi-Source Convergence**: Refactor the backend router dispatcher to dynamically serve both active sources simultaneously based on the incoming `site_url`.
+3. **Deduplication Layer**: Implement a smart database-merging system to prevent duplicate entries if the same title exists on both sites, using the shared `slug` key.
+4. **Cross-Source Chapter Merging**: Develop a fallback parser to merge chapter arrays from both sources to fill missing chapter gaps and provide a complete reader index for the end-user.
 
 ### Short-Term Frontend Roadmap (Next 2–4 Weeks)
 
