@@ -177,8 +177,8 @@ class App : Application(), DefaultLifecycleObserver, SingletonImageLoader.Factor
             if (extensionStoreRepository.getAll().isEmpty()) {
                 logcat { "Extension stores empty, seeding default repository" }
                 extensionStoreRepository.insertFromPreference(
-                    indexUrl = "https://zeroanime40-beep.github.io/neomanga-extensions-repo/repo.json",
-                    name = "Neo Manga"
+                    indexUrl = "https://raw.githubusercontent.com/keiyoushi/extensions/repo/repo.json",
+                    name = "Keiyoushi"
                 )
                 try {
                     extensionStoreRepository.refreshAll()

@@ -38,7 +38,7 @@ import tachiyomi.presentation.core.components.OledScaffold
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
-private const val ARABIC_REPO_URL = "https://zeroanime40-beep.github.io/neomanga-extensions-repo/index.min.json"
+private const val ARABIC_REPO_URL = "https://raw.githubusercontent.com/keiyoushi/extensions/repo/index.min.json"
 
 @Composable
 fun NeoMangaOnboarding(
