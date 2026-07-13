@@ -82,6 +82,16 @@ graph LR
 4.  **`CloudflareInterceptor`**: Handles Cloudflare protection blocks. If a request is blocked (e.g. by a JavaScript challenge), this interceptor launches a headless Android WebView, navigates to the target page, solves the challenge, extracts the `cf_clearance` cookie and User-Agent, updates the shared `AndroidCookieJar`, and retries the request.
 5.  **`DynamicCacheInterceptor`**: Inspects server response headers and dynamically modifies caching instructions (like `Cache-Control` max-age values) to cache data and reduce server loads.
 
+### 1.1 Forensic Audit: Staging Masquerade Bypass
+During the staging phase of the MeshManga integration, a forensic audit identified that the source name `"Team X"` is hardcoded across four core interactor and UI files inside the Mihon app codebase:
+*   `GetEnabledSources.kt` (Bypasses language filters and auto-enables the source if its name matches `"Team X"`)
+*   `GetUnifiedGlobalCatalogUseCase.kt` (Requests and caches the priority global catalog by name `"Team X"`)
+*   `DashboardScreenModel.kt` (Loads priority catalog using name `"Team X"`)
+*   `MainActivity.kt` (Pre-loads catalog using name `"Team X"`)
+
+If the new extension was named differently (e.g. `"MangaSwat (MeshManga)"`), it would be hidden by default unless Arabic language is explicitly enabled in preferences, and the unified dashboard would fail to fetch its data. 
+To resolve this without altering core domain logic, `MeshMangaExtension` was configured to use `name = "Team X"` and `siteUrl = "https://meshmanga.com"`. This seamlessly redirects the dashboard/main activity queries to MeshManga via the backend FastAPI router.
+
 ---
 
 ## 2. Dynamic Referer Hotlink Bypass Implementation

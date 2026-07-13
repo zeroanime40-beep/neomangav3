@@ -13,7 +13,7 @@ import okhttp3.Request
 
 class MeshMangaExtension : HttpSource() {
 
-    override val name: String = "MangaSwat (MeshManga)"
+    override val name: String = "Team X"
     override val baseUrl: String = "https://neomanga-api-server-beryl.vercel.app/api/v1"
     override val lang: String = "ar"
     override val supportsLatest: Boolean = true
