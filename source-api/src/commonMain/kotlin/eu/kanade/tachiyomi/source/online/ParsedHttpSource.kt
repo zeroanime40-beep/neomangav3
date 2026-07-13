@@ -5,6 +5,8 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.util.asJsoup
+import eu.kanade.tachiyomi.util.mapParallel
+import kotlinx.coroutines.runBlocking
 import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
@@ -29,8 +31,10 @@ abstract class ParsedHttpSource : HttpSource() {
     override fun popularMangaParse(response: Response): MangasPage {
         val document = response.asJsoup()
 
-        val mangas = document.select(popularMangaSelector()).map { element ->
-            popularMangaFromElement(element)
+        val mangas = runBlocking {
+            document.select(popularMangaSelector()).mapParallel { element ->
+                popularMangaFromElement(element)
+            }
         }
 
         val hasNextPage = popularMangaNextPageSelector()?.let { selector ->
@@ -70,8 +74,10 @@ abstract class ParsedHttpSource : HttpSource() {
     override fun searchMangaParse(response: Response): MangasPage {
         val document = response.asJsoup()
 
-        val mangas = document.select(searchMangaSelector()).map { element ->
-            searchMangaFromElement(element)
+        val mangas = runBlocking {
+            document.select(searchMangaSelector()).mapParallel { element ->
+                searchMangaFromElement(element)
+            }
         }
 
         val hasNextPage = searchMangaNextPageSelector()?.let { selector ->
@@ -111,8 +117,10 @@ abstract class ParsedHttpSource : HttpSource() {
     override fun latestUpdatesParse(response: Response): MangasPage {
         val document = response.asJsoup()
 
-        val mangas = document.select(latestUpdatesSelector()).map { element ->
-            latestUpdatesFromElement(element)
+        val mangas = runBlocking {
+            document.select(latestUpdatesSelector()).mapParallel { element ->
+                latestUpdatesFromElement(element)
+            }
         }
 
         val hasNextPage = latestUpdatesNextPageSelector()?.let { selector ->
@@ -170,7 +178,9 @@ abstract class ParsedHttpSource : HttpSource() {
     )
     override fun chapterListParse(response: Response): List<SChapter> {
         val document = response.asJsoup()
-        return document.select(chapterListSelector()).map { chapterFromElement(it) }
+        return runBlocking {
+            document.select(chapterListSelector()).mapParallel { chapterFromElement(it) }
+        }
     }
 
     /**
