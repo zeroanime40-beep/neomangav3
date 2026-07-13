@@ -87,9 +87,9 @@ graph LR
 ## 2. Dynamic Referer Hotlink Bypass Implementation
 
 ### The Challenge
-When Cloudinary uploading is removed from the backend `/chapters/pages` endpoint, the API server will return the raw image URLs directly from the target manga website (such as Olympus Staff or their image hosting CDNs). 
+Following the complete removal of Cloudinary infrastructure from the backend server, the API server returns raw original target URLs directly from the target manga websites (such as Olympus Staff or their image hosting CDNs) for both chapter pages and manga covers. 
 
-Manga hosting websites block direct image loading from external applications by checking the HTTP request's `Referer` header. If the header is missing or does not match their domain, the image server returns an `HTTP 403 Forbidden` error.
+Manga hosting websites block direct loading from external clients (like Mihon) by validating the HTTP request's `Referer` header. If the header is missing or does not match the image's source host domain, the server returns an `HTTP 403 Forbidden` error.
 
 ### Applied Override Design
 
