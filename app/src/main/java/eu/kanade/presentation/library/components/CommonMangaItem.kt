@@ -1,6 +1,7 @@
 package eu.kanade.presentation.library.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -131,7 +132,9 @@ private fun BoxScope.CoverTextOverlay(
             .background(
                 Brush.verticalGradient(
                     0f to Color.Transparent,
-                    1f to Color(0xAA000000),
+                    0.3f to Color(0x40000000),
+                    0.7f to Color(0xCC000000),
+                    1f to Color(0xFF000000),
                 ),
             )
             .fillMaxHeight(0.33f)
@@ -303,7 +306,11 @@ private fun GridItemSelectable(
                 onClick = onClick,
                 onLongClick = onLongClick,
             )
-            .selectedOutline(isSelected = isSelected, color = MaterialTheme.colorScheme.secondary)
+            .border(
+                width = 1.dp,
+                color = if (isSelected) MaterialTheme.colorScheme.secondary else Color(0x1F00E5FF),
+                shape = MaterialTheme.shapes.small,
+            )
             .padding(4.dp),
     ) {
         val contentColor = if (isSelected) {

@@ -8,6 +8,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.runtime.State
+import androidx.compose.runtime.remember
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.painter.ColorPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.Role
@@ -30,7 +43,7 @@ enum class MangaCover(val ratio: Float) {
     ) {
         AsyncImage(
             model = data,
-            placeholder = ColorPainter(CoverPlaceholderColor),
+            placeholder = rememberShimmerPainter(),
             error = rememberResourceBitmapPainter(id = R.drawable.cover_error),
             contentDescription = contentDescription,
             modifier = modifier
@@ -51,4 +64,35 @@ enum class MangaCover(val ratio: Float) {
     }
 }
 
-private val CoverPlaceholderColor = Color(0x1F888888)
+@Composable
+private fun rememberShimmerPainter(): Painter {
+    val transition = rememberInfiniteTransition(label = "shimmer")
+    val translateAnim = transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1000f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1200, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart,
+        ),
+        label = "shimmerTranslate",
+    )
+    return remember(translateAnim) {
+        ShimmerPainter(translateAnim)
+    }
+}
+
+private class ShimmerPainter(private val translateAnim: State<Float>) : Painter() {
+    override val intrinsicSize: Size = Size.Unspecified
+
+    override fun DrawScope.onDraw() {
+        val value = translateAnim.value
+        val baseColor = Color(0x1A00E5FF)       // 10% alpha cyber-teal
+        val highlightColor = Color(0x4000E5FF)  // 25% alpha cyber-teal
+        val brush = Brush.linearGradient(
+            colors = listOf(baseColor, highlightColor, baseColor),
+            start = Offset(value - 300f, value - 300f),
+            end = Offset(value + 300f, value + 300f),
+        )
+        drawRect(brush = brush)
+    }
+}

@@ -21,13 +21,17 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -122,10 +126,11 @@ data class BrowseSourceScreen(
         }
 
         Scaffold(
+            containerColor = Color(0xFF000000),
             topBar = {
                 Column(
                     modifier = Modifier
-                        .background(MaterialTheme.colorScheme.surface)
+                        .background(Color(0xFF000000))
                         .pointerInput(Unit) {},
                 ) {
                     BrowseSourceToolbar(
@@ -209,31 +214,33 @@ data class BrowseSourceScreen(
             },
             snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         ) { paddingValues ->
-            BrowseSourceContent(
-                source = screenModel.source,
-                mangaList = screenModel.mangaPagerFlowFlow.collectAsLazyPagingItems(),
-                columns = screenModel.getColumnsPreference(LocalConfiguration.current.orientation),
-                displayMode = screenModel.displayMode,
-                snackbarHostState = snackbarHostState,
-                contentPadding = paddingValues,
-                onWebViewClick = onWebViewClick,
-                onHelpClick = { uriHandler.openUri(Constants.URL_HELP) },
-                onLocalSourceHelpClick = onHelpClick,
-                onMangaClick = { navigator.push((MangaScreen(it.id, true))) },
-                onMangaLongClick = { manga ->
-                    scope.launchIO {
-                        val duplicates = screenModel.getDuplicateLibraryManga(manga)
-                        when {
-                            manga.favorite -> screenModel.setDialog(BrowseSourceScreenModel.Dialog.RemoveManga(manga))
-                            duplicates.isNotEmpty() -> screenModel.setDialog(
-                                BrowseSourceScreenModel.Dialog.AddDuplicateManga(manga, duplicates),
-                            )
-                            else -> screenModel.addFavorite(manga)
+            CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+                BrowseSourceContent(
+                    source = screenModel.source,
+                    mangaList = screenModel.mangaPagerFlowFlow.collectAsLazyPagingItems(),
+                    columns = screenModel.getColumnsPreference(LocalConfiguration.current.orientation),
+                    displayMode = screenModel.displayMode,
+                    snackbarHostState = snackbarHostState,
+                    contentPadding = paddingValues,
+                    onWebViewClick = onWebViewClick,
+                    onHelpClick = { uriHandler.openUri(Constants.URL_HELP) },
+                    onLocalSourceHelpClick = onHelpClick,
+                    onMangaClick = { navigator.push((MangaScreen(it.id, true))) },
+                    onMangaLongClick = { manga ->
+                        scope.launchIO {
+                            val duplicates = screenModel.getDuplicateLibraryManga(manga)
+                            when {
+                                manga.favorite -> screenModel.setDialog(BrowseSourceScreenModel.Dialog.RemoveManga(manga))
+                                duplicates.isNotEmpty() -> screenModel.setDialog(
+                                    BrowseSourceScreenModel.Dialog.AddDuplicateManga(manga, duplicates),
+                                )
+                                else -> screenModel.addFavorite(manga)
+                            }
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                         }
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                    }
-                },
-            )
+                    },
+                )
+            }
         }
 
         val onDismissRequest = { screenModel.setDialog(null) }
