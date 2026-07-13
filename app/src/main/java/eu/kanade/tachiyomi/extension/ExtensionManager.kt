@@ -50,6 +50,32 @@ private fun Extension.isBlocked(): Boolean {
     return sourcesList.isNotEmpty() && sourcesList.all { it in BLOCKED_SOURCE_NAMES }
 }
 
+private fun Extension.isAllowed(): Boolean {
+    if (this.lang != "ar") return false
+    if (this.isNsfw) return false
+
+    val inappropriateKeywords = arrayOf("+18", "18+", "محتوى غير لائق", "المحتوى غير لائق")
+    val nameLower = this.name.lowercase(Locale.ROOT)
+    if (inappropriateKeywords.any { keyword -> nameLower.contains(keyword.lowercase(Locale.ROOT)) }) {
+        return false
+    }
+
+    val sourcesList = when (this) {
+        is Extension.Installed -> this.sources.map { it.name }
+        is Extension.Available -> this.sources.map { it.name }
+        else -> emptyList()
+    }
+    for (sourceName in sourcesList) {
+        val sNameLower = sourceName.lowercase(Locale.ROOT)
+        if (inappropriateKeywords.any { keyword -> sNameLower.contains(keyword.lowercase(Locale.ROOT)) }) {
+            return false
+        }
+    }
+
+    return true
+}
+
+
 /**
  * The manager of extensions installed as another apk which extend the available sources. It handles
  * the retrieval of remotely available extensions as well as installing, updating and removing them.
@@ -142,12 +168,12 @@ class ExtensionManager(
 
         installedExtensionMapFlow.value = extensions
             .filterIsInstance<LoadResult.Success>()
-            .filterNot { it.extension.isBlocked() }
+            .filter { it.extension.isAllowed() && !it.extension.isBlocked() }
             .associate { it.extension.pkgName to it.extension }
 
         untrustedExtensionMapFlow.value = extensions
             .filterIsInstance<LoadResult.Untrusted>()
-            .filterNot { it.extension.isBlocked() }
+            .filter { it.extension.isAllowed() && !it.extension.isBlocked() }
             .associate { it.extension.pkgName to it.extension }
 
         _isInitialized.value = true
@@ -157,16 +183,9 @@ class ExtensionManager(
      * Finds the available extensions in the [api] and updates [availableExtensionMapFlow].
      */
     suspend fun findAvailableExtensions() {
-        val inappropriateKeywords = arrayOf("+18", "محتوى غير لائق", "المحتوى غير لائق")
         val extensions: List<Extension.Available> = try {
             api.findExtensions()
-                .filterNot { it.isBlocked() }
-                .filterNot { ext ->
-                    val name = ext.name.trim()
-                    inappropriateKeywords.any { keyword ->
-                        name.contains(keyword.trim(), ignoreCase = true)
-                    }
-                }
+                .filter { it.isAllowed() && !it.isBlocked() }
         } catch (e: Exception) {
             logcat(LogPriority.ERROR, e)
             withUIContext { context.toast(MR.strings.extension_api_error) }
@@ -221,8 +240,8 @@ class ExtensionManager(
             return
         }
 
-        val installedExtensionsMap = installedExtensionMapFlow.value.toMutableMap()
-        var changed = false
+        val installedExtensionsMap = installedExtensionMapFlow.value.filter { it.value.isAllowed() }.toMutableMap()
+        var changed = installedExtensionsMap.size != installedExtensionMapFlow.value.size
         for ((pkgName, extension) in installedExtensionsMap) {
             val availableExt = availableExtensions.find { it.pkgName == pkgName }
 
@@ -323,7 +342,9 @@ class ExtensionManager(
      * @param extension The extension to be registered.
      */
     private fun registerNewExtension(extension: Extension.Installed) {
-        installedExtensionMapFlow.value += extension
+        if (extension.isAllowed() && !extension.isBlocked()) {
+            installedExtensionMapFlow.value += extension
+        }
     }
 
     /**
@@ -333,7 +354,9 @@ class ExtensionManager(
      * @param extension The extension to be registered.
      */
     private fun registerUpdatedExtension(extension: Extension.Installed) {
-        installedExtensionMapFlow.value += extension
+        if (extension.isAllowed() && !extension.isBlocked()) {
+            installedExtensionMapFlow.value += extension
+        }
     }
 
     /**
@@ -353,19 +376,29 @@ class ExtensionManager(
     private inner class InstallationListener : ExtensionInstallReceiver.Listener {
 
         override fun onExtensionInstalled(extension: Extension.Installed) {
-            registerNewExtension(extension.withUpdateCheck())
-            updatePendingUpdatesCount()
+            if (extension.isAllowed() && !extension.isBlocked()) {
+                registerNewExtension(extension.withUpdateCheck())
+                updatePendingUpdatesCount()
+            }
         }
 
         override fun onExtensionUpdated(extension: Extension.Installed) {
-            registerUpdatedExtension(extension.withUpdateCheck())
-            updatePendingUpdatesCount()
+            if (extension.isAllowed() && !extension.isBlocked()) {
+                registerUpdatedExtension(extension.withUpdateCheck())
+                updatePendingUpdatesCount()
+            }
         }
 
         override fun onExtensionUntrusted(extension: Extension.Untrusted) {
-            installedExtensionMapFlow.value -= extension.pkgName
-            untrustedExtensionMapFlow.value += extension
-            updatePendingUpdatesCount()
+            if (extension.isAllowed() && !extension.isBlocked()) {
+                installedExtensionMapFlow.value -= extension.pkgName
+                untrustedExtensionMapFlow.value += extension
+                updatePendingUpdatesCount()
+            } else {
+                installedExtensionMapFlow.value -= extension.pkgName
+                untrustedExtensionMapFlow.value -= extension.pkgName
+                updatePendingUpdatesCount()
+            }
         }
 
         override fun onPackageUninstalled(pkgName: String) {
