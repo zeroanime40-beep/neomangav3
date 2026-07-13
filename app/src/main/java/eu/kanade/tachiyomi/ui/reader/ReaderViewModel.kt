@@ -9,10 +9,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import eu.kanade.domain.base.BasePreferences
 import eu.kanade.domain.chapter.model.toDbChapter
+import eu.kanade.domain.chapter.model.toSChapter
 import eu.kanade.domain.manga.interactor.SetMangaViewerFlags
 import eu.kanade.domain.manga.model.readerOrientation
 import eu.kanade.domain.manga.model.readingMode
 import eu.kanade.domain.source.interactor.GetIncognitoState
+import eu.kanade.tachiyomi.data.cache.ChapterCache
+import coil3.imageLoader
+import coil3.request.ImageRequest
 import eu.kanade.domain.track.interactor.TrackChapter
 import eu.kanade.domain.track.service.TrackPreferences
 import eu.kanade.tachiyomi.data.database.models.toDomainChapter
@@ -460,7 +464,77 @@ class ReaderViewModel @JvmOverloads constructor(
             downloadNextChapters()
         }
 
+        // Speculative prefetching trigger (threshold 50% midpoint)
+        val isMidpointPassed = page.number.toDouble() / pages.size >= 0.5
+        if (isMidpointPassed) {
+            state.value.viewerChapters?.nextChapter?.chapter?.let { nextChapter ->
+                prefetchNextChapter(nextChapter)
+            }
+        }
+
         eventChannel.trySend(Event.PageChanged)
+    }
+
+    private val chapterCache: ChapterCache = Injekt.get()
+    private var prefetchedChapterId: Long? = null
+
+    private fun prefetchNextChapter(nextChapter: eu.kanade.tachiyomi.data.database.models.Chapter) {
+        val nextChapterId = nextChapter.id ?: return
+        if (prefetchedChapterId == nextChapterId) return
+        prefetchedChapterId = nextChapterId
+
+        val manga = manga ?: return
+        val source = sourceManager.get(manga.source) as? HttpSource ?: return
+
+        // Skip if next chapter is already downloaded (avoid duplicate downloads/jank)
+        val isNextChapterDownloaded = downloadManager.isChapterDownloaded(
+            nextChapter.name,
+            nextChapter.scanlator,
+            nextChapter.url,
+            manga.title,
+            manga.source,
+        )
+        if (isNextChapterDownloaded) return
+
+        viewModelScope.launchIO {
+            try {
+                logcat { "Speculative prefetching next chapter: ${nextChapter.name}" }
+                
+                val domainChapter = nextChapter.toDomainChapter() ?: return@launchIO
+                val sChapter = domainChapter.toSChapter()
+                val pages = try {
+                    chapterCache.getPageListFromCache(domainChapter)
+                } catch (e: Throwable) {
+                    source.getPageList(sChapter).also { fetchedPages ->
+                        // Cache page list for faster loading
+                        chapterCache.putPageListToCache(domainChapter, fetchedPages)
+                    }
+                }
+                
+                if (pages.isEmpty()) return@launchIO
+                
+                // Preload top 3 page assets sequentially to isolate bandwidth usage
+                val prefetchLimit = minOf(3, pages.size)
+                val context = Injekt.get<Application>()
+                for (i in 0 until prefetchLimit) {
+                    val page = pages[i]
+                    if (page.imageUrl.isNullOrEmpty()) {
+                        page.imageUrl = source.getImageUrl(page)
+                    }
+                    val imageUrl = page.imageUrl
+                    if (!imageUrl.isNullOrEmpty() && !chapterCache.isImageInCache(imageUrl)) {
+                        // Dispatch low priority request directly into Coil 3 pipeline
+                        val request = ImageRequest.Builder(context)
+                            .data(imageUrl)
+                            .build()
+                        context.imageLoader.enqueue(request)
+                    }
+                }
+                logcat { "Successfully prefetched top $prefetchLimit pages of next chapter: ${nextChapter.name}" }
+            } catch (e: Throwable) {
+                // Fail completely silently to not disrupt active reading flow
+            }
+        }
     }
 
     private fun downloadNextChapters() {
