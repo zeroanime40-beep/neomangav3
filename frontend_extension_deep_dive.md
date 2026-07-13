@@ -1,6 +1,6 @@
 # Neo Manga Frontend Extension — Architecture, Networking & Hotlink Bypass Plan
 **Author:** Elite Senior Systems Architect & Lead Developer  
-**Status:** Completed Audit  
+**Status:** MeshManga Staging Integration (Olympus Paused)  
 **Date:** July 13, 2026
 
 ---
@@ -207,7 +207,8 @@ Many manga sources use Cloudflare to protect against bots and scraping.
 
 ### Short-Term Frontend Roadmap (Next 2–4 Weeks)
 
-1.  **[COMPLETED] Implement the Dynamic Referer Bypass**: Applied the `imageRequest` override in `NeoMangaMasterExtension.kt` to allow loading pages directly from target sites, avoiding Cloudinary.
+1.  **[ACTIVE - STAGING] Multi-Source Integration (MeshManga)**: Created the `MeshMangaExtension.kt` client class targeting the Next.js API. Registered `meshSource` in `AndroidSourceManager.kt`. Paused the Olympus `masterSource` extension registration to allow isolated validation testing of the new source.
+2.  **[COMPLETED] Implement the Dynamic Referer Bypass**: Applied the `imageRequest` override in `NeoMangaMasterExtension.kt` to allow loading pages directly from target sites, avoiding Cloudinary.
 2.  **Add Extension Configuration Settings**:
     Expose preferences in the extension settings page using Mihon's `Preference` library:
     *   **Backend Base URL**: Allow users to change the API server URL (e.g. shifting from Vercel to a local server or a production Render/Railway instance).
