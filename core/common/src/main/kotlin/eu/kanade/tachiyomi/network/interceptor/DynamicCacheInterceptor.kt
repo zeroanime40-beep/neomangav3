@@ -17,7 +17,7 @@ class DynamicCacheInterceptor : Interceptor {
             return response
         }
 
-        val contentType = response.body?.contentType()?.toString()
+        val contentType = response.body.contentType()?.toString()
         val isHtml = contentType != null && contentType.contains("text/html", ignoreCase = true)
 
         if (isHtml) {
