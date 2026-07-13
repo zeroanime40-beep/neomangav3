@@ -157,8 +157,16 @@ class ExtensionManager(
      * Finds the available extensions in the [api] and updates [availableExtensionMapFlow].
      */
     suspend fun findAvailableExtensions() {
+        val inappropriateKeywords = arrayOf("+18", "محتوى غير لائق", "المحتوى غير لائق")
         val extensions: List<Extension.Available> = try {
-            api.findExtensions().filterNot { it.isBlocked() }
+            api.findExtensions()
+                .filterNot { it.isBlocked() }
+                .filterNot { ext ->
+                    val name = ext.name.trim()
+                    inappropriateKeywords.any { keyword ->
+                        name.contains(keyword.trim(), ignoreCase = true)
+                    }
+                }
         } catch (e: Exception) {
             logcat(LogPriority.ERROR, e)
             withUIContext { context.toast(MR.strings.extension_api_error) }
