@@ -26,7 +26,7 @@ class NetworkHelper(
             .cache(
                 Cache(
                     directory = File(context.cacheDir, "network_cache"),
-                    maxSize = 5L * 1024 * 1024, // 5 MiB
+                    maxSize = 100L * 1024 * 1024, // 100 MiB
                 ),
             )
             .addInterceptor(UncaughtExceptionInterceptor())
@@ -39,27 +39,34 @@ class NetworkHelper(
             builder.addNetworkInterceptor(httpLoggingInterceptor)
         }
 
-        when (preferences.dohProvider.get()) {
-            PREF_DOH_CLOUDFLARE -> builder.dohCloudflare()
-            PREF_DOH_GOOGLE -> builder.dohGoogle()
-            PREF_DOH_ADGUARD -> builder.dohAdGuard()
-            PREF_DOH_QUAD9 -> builder.dohQuad9()
-            PREF_DOH_ALIDNS -> builder.dohAliDNS()
-            PREF_DOH_DNSPOD -> builder.dohDNSPod()
-            PREF_DOH_360 -> builder.doh360()
-            PREF_DOH_QUAD101 -> builder.dohQuad101()
-            PREF_DOH_MULLVAD -> builder.dohMullvad()
-            PREF_DOH_CONTROLD -> builder.dohControlD()
-            PREF_DOH_NJALLA -> builder.dohNajalla()
-            PREF_DOH_SHECAN -> builder.dohShecan()
-            else -> builder
+        val selectedDoh = preferences.dohProvider.get()
+        if (selectedDoh == -1) {
+            builder.dohCloudflare()
+        } else {
+            when (selectedDoh) {
+                PREF_DOH_CLOUDFLARE -> builder.dohCloudflare()
+                PREF_DOH_GOOGLE -> builder.dohGoogle()
+                PREF_DOH_ADGUARD -> builder.dohAdGuard()
+                PREF_DOH_QUAD9 -> builder.dohQuad9()
+                PREF_DOH_ALIDNS -> builder.dohAliDNS()
+                PREF_DOH_DNSPOD -> builder.dohDNSPod()
+                PREF_DOH_360 -> builder.doh360()
+                PREF_DOH_QUAD101 -> builder.dohQuad101()
+                PREF_DOH_MULLVAD -> builder.dohMullvad()
+                PREF_DOH_CONTROLD -> builder.dohControlD()
+                PREF_DOH_NJALLA -> builder.dohNajalla()
+                PREF_DOH_SHECAN -> builder.dohShecan()
+                else -> builder
+            }
         }
     }
 
     val client = clientBuilder
+        .addInterceptor(eu.kanade.tachiyomi.network.interceptor.SmartRetryInterceptor())
         .addInterceptor(
             CloudflareInterceptor(context, cookieJar, ::defaultUserAgentProvider),
         )
+        .addInterceptor(eu.kanade.tachiyomi.network.interceptor.DynamicCacheInterceptor())
         .build()
 
     /**
