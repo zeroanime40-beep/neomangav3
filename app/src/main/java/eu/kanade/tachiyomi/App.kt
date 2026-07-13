@@ -48,6 +48,7 @@ import eu.kanade.tachiyomi.util.system.animatorDurationScale
 import eu.kanade.tachiyomi.util.system.cancelNotification
 import eu.kanade.tachiyomi.util.system.notify
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import logcat.AndroidLogcatLogger
@@ -55,6 +56,7 @@ import logcat.LogPriority
 import logcat.LogcatLogger
 import mihon.core.migration.Migrator
 import mihon.core.migration.migrations.migrations
+import mihon.domain.extension.repository.ExtensionStoreRepository
 import mihon.telemetry.TelemetryConfig
 import org.conscrypt.Conscrypt
 import tachiyomi.core.common.i18n.stringResource
@@ -169,6 +171,22 @@ class App : Application(), DefaultLifecycleObserver, SingletonImageLoader.Factor
         }
 
         initializeMigrator()
+
+        scope.launch(Dispatchers.IO) {
+            val extensionStoreRepository = Injekt.get<ExtensionStoreRepository>()
+            if (extensionStoreRepository.getAll().isEmpty()) {
+                logcat { "Extension stores empty, seeding default repository" }
+                extensionStoreRepository.insertFromPreference(
+                    indexUrl = "https://zeroanime40-beep.github.io/neomanga-extensions-repo/repo.json",
+                    name = "Neo Manga"
+                )
+                try {
+                    extensionStoreRepository.refreshAll()
+                } catch (e: Exception) {
+                    logcat(LogPriority.ERROR, e) { "Failed to refresh seeded extension store" }
+                }
+            }
+        }
     }
 
     private fun initializeMigrator() {
