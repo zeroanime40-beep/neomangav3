@@ -217,7 +217,7 @@ Many manga sources use Cloudflare to protect against bots and scraping.
 
 ### Short-Term Frontend Roadmap (Next 2–4 Weeks)
 
-1.  **[ACTIVE - STAGING] Multi-Source Integration (MeshManga)**: Created the `MeshMangaExtension.kt` client class targeting the Next.js API. Registered `meshSource` in `AndroidSourceManager.kt`. Paused the Olympus `masterSource` extension registration to allow isolated validation testing of the new source.
+1.  **[COMPLETED] Multi-Source Integration Phase 2 (MeshManga)**: Created the `MeshMangaExtension.kt` client class targeting the Next.js API. Registered `meshSource` in `AndroidSourceManager.kt`. Configured it to masquerade as the `"Team X"` source name to successfully route requests to the unified dashboard in the Mihon app. Paused the Olympus `masterSource` extension registration to allow isolated validation testing of the new source.
 2.  **[COMPLETED] Implement the Dynamic Referer Bypass**: Applied the `imageRequest` override in `NeoMangaMasterExtension.kt` to allow loading pages directly from target sites, avoiding Cloudinary.
 2.  **Add Extension Configuration Settings**:
     Expose preferences in the extension settings page using Mihon's `Preference` library:
