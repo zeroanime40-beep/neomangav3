@@ -61,9 +61,19 @@ This document maps out the specific implementation phases for decoupling **Neo M
   3. Implement non-sticky database check retry cooldown (30 seconds) in `check_db_online()` to avoid permanent offline locks on transient errors.
   4. Refactor `upsert_manga_entry()` to perform a single, atomic `update_one` query with `upsert=True` (using `$set` and `$setOnInsert` operators), eliminating ingestion concurrency races.
 
+### Phase 8: Performance & Concurrency [COMPLETED]
+* **Objective**: Remove CPU-bound HTML parsing bottlenecks, configure persistent shared connection pooling, precompile regular expressions, and eliminate blocking request-path garbage collection runs.
+* **Steps**:
+  1. Add `lxml` to backend dependency manifest (`requirements.txt`).
+  2. Move synchronous BeautifulSoup scraping parsing blocks inside `scrapers/madara_base.py` into pure synchronous helper functions, offloading their execution off FastAPI's main thread event loop using `asyncio.to_thread` with the high-speed `"lxml"` parser backend.
+  3. Precompile regular expressions at module scopes (`main.py`, `core/database.py`, `scrapers/madara_base.py`) to reduce execution overhead.
+  4. Initialize a shared process-level `httpx.AsyncClient` inside the FastAPI startup `lifespan` hook, attach it to `app.state.http_client` with configured connection pool limits (`max_connections=50`, `max_keepalive_connections=20`), and propagate it into all scraper requests.
+  5. Delete the blocking synchronous `gc.collect()` call from the active request path inside the `/api/v1/chapters/pages` route.
+
 ---
 
 ## Core Guard Rules
 
 > [!IMPORTANT]
 > **Documentation Guard Policy**: For every future modification, feature addition, or refactoring you perform, you must immediately update both `PROJECT_STATUS.md` and `decoupling_implementation_plan.md` first to keep the ledger completely synchronous and accurate.
+
