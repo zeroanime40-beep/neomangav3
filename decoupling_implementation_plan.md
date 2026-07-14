@@ -45,6 +45,14 @@ This document maps out the specific implementation phases for decoupling **Neo M
   5. Refactor backend details endpoint `/api/v1/manga/details` to fetch sources concurrently using `asyncio.gather` with a 5.0s timeout wrapper, merging chapters chronologically and enforcing priority overrides.
   6. Route page requests dynamically in `/api/v1/chapters/pages` based on URL domain.
 
+### Phase 6: Resilient Details Caching & Fallback URL Resolution [COMPLETED]
+* **Objective**: Introduce Stale-While-Revalidate caching, non-destructive background healing, and self-healing fallback candidate testing.
+* **Steps**:
+  1. Implement `get_slug_candidates` and `fetch_source_details_with_fallback` in the FastAPI backend to sequentially test variant slugs (`-manga`, `-arabic`) on HTTP 404/failures.
+  2. Implement `heal_manga_details_background` executing via `BackgroundTasks` to perform a non-destructive merge of Primary, Secondary, and Cache chapters.
+  3. Refactor the details endpoint to implement SWR cache-control (fresh cache is served instantly; stale cache is served instantly and background healing is triggered; empty cache is scraped synchronously).
+  4. Ensure both `chapter_number` and `extracted_number` are set in chapter payloads to prevent client/auto-inference schema discrepancies.
+
 ---
 
 ## Core Guard Rules
