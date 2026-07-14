@@ -70,10 +70,19 @@ This document maps out the specific implementation phases for decoupling **Neo M
   4. Initialize a shared process-level `httpx.AsyncClient` inside the FastAPI startup `lifespan` hook, attach it to `app.state.http_client` with configured connection pool limits (`max_connections=50`, `max_keepalive_connections=20`), and propagate it into all scraper requests.
   5. Delete the blocking synchronous `gc.collect()` call from the active request path inside the `/api/v1/chapters/pages` route.
 
+### Phase 9: Render.com API Server Migration [COMPLETED]
+* **Objective**: Migrate production backend deployment from Vercel to Render.com persistent web service to improve response stability and ensure keep-alive connection reliability.
+* **Steps**:
+  1. Refactor hardcoded Vercel API base URLs in frontend Kotlin source files (`MeshMangaExtension.kt` and `NeoMangaMasterExtension.kt`) to point to `https://neomanga-api-server.onrender.com/api/v1`.
+  2. Update the default URL fallback setting in `NetworkPreferences.kt` to Render.com's URL.
+  3. Ensure that the cloud-agnostic Python server codebase contains no environment-locked deployment URLs.
+  4. Compile and verify Kotlin and Python configurations cleanly.
+
 ---
 
 ## Core Guard Rules
 
 > [!IMPORTANT]
 > **Documentation Guard Policy**: For every future modification, feature addition, or refactoring you perform, you must immediately update both `PROJECT_STATUS.md` and `decoupling_implementation_plan.md` first to keep the ledger completely synchronous and accurate.
+
 

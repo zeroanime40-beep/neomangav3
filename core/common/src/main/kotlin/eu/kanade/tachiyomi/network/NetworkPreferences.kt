@@ -19,6 +19,6 @@ class NetworkPreferences(
 
     val neoMangaApiUrl = preferenceStore.getString(
         "neo_manga_api_url",
-        "https://neomanga-api-server-beryl.vercel.app/api/v1/",
+        "https://neomanga-api-server.onrender.com/api/v1/",
     )
 }
