@@ -109,7 +109,7 @@ class NeoMangaMasterExtension : HttpSource() {
         val updatedChapters = if (fetchChapters) {
             details.chapters.map { chapterItem ->
                 SChapter.create().apply {
-                    setUrlWithoutDomain(chapterItem.url)
+                    url = chapterItem.url
                     name = chapterItem.title
                     chapter_number = chapterItem.chapter_number
                     date_upload = System.currentTimeMillis()
