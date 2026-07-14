@@ -51,7 +51,7 @@ This document maps out the specific implementation phases for decoupling **Neo M
   1. Implement `get_slug_candidates` and `fetch_source_details_with_fallback` in the FastAPI backend to sequentially test variant slugs (`-manga`, `-arabic`) on HTTP 404/failures.
   2. Implement `heal_manga_details_background` executing via `BackgroundTasks` to perform a non-destructive merge of Primary, Secondary, and Cache chapters.
   3. Refactor the details endpoint to implement SWR cache-control (fresh cache is served instantly; stale cache is served instantly and background healing is triggered; empty cache is scraped synchronously).
-  4. Ensure both `chapter_number` and `extracted_number` are set in chapter payloads to prevent client/auto-inference schema discrepancies.
+  4. Ensure both `chapter_number` and `extracted_number` are set in chapter payloads to prevent client/auto-inference schema discrepancies. Implement on-the-fly cache cleansing (`cleanse_cached_chapters`) and defensive fallback checks (preferring `chapter_number` then falling back to `extracted_number`) to eliminate visual duplicate chapters inside client and cache merge (Release 6.1).
 
 ---
 
