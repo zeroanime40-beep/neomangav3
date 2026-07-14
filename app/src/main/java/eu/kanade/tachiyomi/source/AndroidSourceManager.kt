@@ -54,7 +54,8 @@ class AndroidSourceManager(
             extensionManager.installedExtensionsFlow
                 .collectLatest { extensions ->
                     val meshSource = eu.kanade.tachiyomi.source.online.MeshMangaExtension()
-                    // val masterSource = eu.kanade.tachiyomi.source.online.NeoMangaMasterExtension()
+                    val masterSource = eu.kanade.tachiyomi.source.online.NeoMangaMasterExtension()
+                    val virtualSource = eu.kanade.tachiyomi.source.online.NeoMangaVirtualSource()
                     val mutableMap = ConcurrentHashMap<Long, Source>(
                         mapOf(
                             LocalSource.ID to LocalSource(
@@ -62,12 +63,14 @@ class AndroidSourceManager(
                                 Injekt.get(),
                                 Injekt.get(),
                             ),
-                            // masterSource.id to masterSource,
+                            masterSource.id to masterSource,
                             meshSource.id to meshSource,
+                            virtualSource.id to virtualSource,
                         ),
                     )
-                    // registerStubSource(StubSource.from(masterSource))
+                    registerStubSource(StubSource.from(masterSource))
                     registerStubSource(StubSource.from(meshSource))
+                    registerStubSource(StubSource.from(virtualSource))
                     extensions.forEach { extension ->
                         extension.sources.forEach {
                             if (it.name !in blockedSourceNames) {

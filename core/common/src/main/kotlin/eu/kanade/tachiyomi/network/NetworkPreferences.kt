@@ -16,4 +16,9 @@ class NetworkPreferences(
         "default_user_agent",
         "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36",
     )
+
+    val neoMangaApiUrl = preferenceStore.getString(
+        "neo_manga_api_url",
+        "https://neomanga-api-server-beryl.vercel.app/api/v1/",
+    )
 }

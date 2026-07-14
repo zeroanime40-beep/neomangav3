@@ -107,14 +107,14 @@ class MeshMangaExtension : HttpSource() {
         } else manga
 
         val updatedChapters = if (fetchChapters) {
-            details.chapters.mapIndexed { index, chapterItem ->
+            details.chapters.map { chapterItem ->
                 SChapter.create().apply {
-                    setUrlWithoutDomain(chapterItem.url)
+                    this.url = chapterItem.url
                     name = chapterItem.title
-                    chapter_number = (index + 1).toFloat()
+                    chapter_number = chapterItem.chapter_number
                     date_upload = System.currentTimeMillis()
                 }
-            }.reversed()
+            }
         } else chapters
 
         return SMangaUpdate(updatedManga, updatedChapters)
@@ -186,7 +186,8 @@ class MeshMangaExtension : HttpSource() {
     @Serializable
     data class ChapterItem(
         val title: String,
-        val url: String
+        val url: String,
+        val chapter_number: Float
     )
 
     @Serializable

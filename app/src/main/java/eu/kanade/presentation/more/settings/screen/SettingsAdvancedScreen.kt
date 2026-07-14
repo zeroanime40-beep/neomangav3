@@ -280,6 +280,14 @@ object SettingsAdvancedScreen : SearchableSettings {
                         context.toast(MR.strings.requires_app_restart)
                     },
                 ),
+                Preference.PreferenceItem.EditTextPreference(
+                    preference = networkPreferences.neoMangaApiUrl,
+                    title = "عنوان خادم Neo Manga API",
+                    subtitle = "تغيير رابط الـ API لتشغيل خادم محلي للتطوير أو خادم مخصص",
+                    onValueChanged = {
+                        it.startsWith("http://") || it.startsWith("https://")
+                    },
+                ),
             ),
         )
     }

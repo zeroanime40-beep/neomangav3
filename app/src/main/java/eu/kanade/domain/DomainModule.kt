@@ -214,5 +214,7 @@ class DomainModule : InjektModule {
         addFactory { GetIncognitoState(get(), get(), get()) }
 
         addFactory { UpdateMangaFromRemote(get(), get(), get(), get(), get(), get(), get()) }
+
+        addFactory { eu.kanade.domain.manga.interactor.SyncNeoMangaDetailsUseCase(get(), get(), get()) }
     }
 }

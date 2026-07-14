@@ -1,0 +1,2 @@
+-- Decoupling Migration: Map legacy Team X developer source IDs to the static Virtual ID (9999)
+UPDATE mangas SET source = 9999 WHERE source = 4110737012647435874;
