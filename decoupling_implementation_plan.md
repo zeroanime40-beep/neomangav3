@@ -53,6 +53,14 @@ This document maps out the specific implementation phases for decoupling **Neo M
   3. Refactor the details endpoint to implement SWR cache-control (fresh cache is served instantly; stale cache is served instantly and background healing is triggered; empty cache is scraped synchronously).
   4. Ensure both `chapter_number` and `extracted_number` are set in chapter payloads to prevent client/auto-inference schema discrepancies. Implement on-the-fly cache cleansing (`cleanse_cached_chapters`) and defensive fallback checks (preferring `chapter_number` then falling back to `extracted_number`) to eliminate visual duplicate chapters inside client and cache merge (Release 6.1).
 
+### Phase 7: Database Integrity & Resiliency [COMPLETED]
+* **Objective**: Refactor backend persistence to use atomic queries, programmatic indexes, retry cooldowns, and serverless pooling.
+* **Steps**:
+  1. Configure `AsyncIOMotorClient` with `serverSelectionTimeoutMS=3000` and dynamic connection pooling limits (`maxPoolSize=20`, `minPoolSize=0`).
+  2. Implement programmatic unique indexes on `manga_catalog.slug` and `chapter_pages.chapter_url` on connection startup with try-except guards.
+  3. Implement non-sticky database check retry cooldown (30 seconds) in `check_db_online()` to avoid permanent offline locks on transient errors.
+  4. Refactor `upsert_manga_entry()` to perform a single, atomic `update_one` query with `upsert=True` (using `$set` and `$setOnInsert` operators), eliminating ingestion concurrency races.
+
 ---
 
 ## Core Guard Rules
