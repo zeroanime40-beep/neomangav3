@@ -47,7 +47,7 @@ The extension implements five coroutine-based suspend functions to handle asynch
 1.  **`getPopularManga(page: Int): MangasPage`**: Fetches the catalog from the backend endpoint `/manga/catalog`. It builds the URL using `HttpUrl.toHttpUrl().newBuilder()`, appends query parameters `site_url` and `pages` (mapped from `page`), executes the call asynchronously, and decodes the result into `CatalogResponse`.
 2.  **`getLatestUpdates(page: Int): MangasPage`**: Queries `/manga/latest` with the parameter `site_url`, deserializes the response into `LatestResponse`, and maps it to `MangasPage`.
 3.  **`getSearchManga(page: Int, query: String, filters: FilterList): MangasPage`**: Calls `getPopularManga(page)`. If `query` is present, it filters the result set locally by checking if the title contains the query string (case-insensitively).
-4.  **`getMangaUpdate(...)`**: Retrieves detailed metadata from `/manga/details` using the manga's URL. If `fetchDetails` is enabled, it maps the synopsis and genres. If `fetchChapters` is enabled, it parses the chapters list, ordering them from oldest to newest.
+4.  **`getMangaUpdate(...)`**: Retrieves detailed metadata from `/manga/details` using the manga's URL. If `fetchDetails` is enabled, it maps the synopsis and genres. If `fetchChapters` is enabled, it parses the chapters list, ordering them from newest to oldest (Index 0 = Newest) using the backend-supplied `chapter_number` float value directly without `.reversed()` transformations.
 5.  **`getPageList(chapter: SChapter): List<Page>`**: Requests reading links from the `/chapters/pages` endpoint. It parses the return payload into `PagesResponse` and maps the image URLs into a list of Tachiyomi `Page` objects.
 
 ---
@@ -181,6 +181,7 @@ The updated backend API endpoint `/api/v1/chapters/pages` is designed to emit th
     *   `total_pages`: JSON Number (Integer) maps to Kotlin `Int`.
     *   `pages`: JSON Array of Strings maps to Kotlin `List<String>`.
 *   **Payload Changes**: The only change is the value of the elements within the `pages` array, shifting from Cloudinary URLs (`https://res.cloudinary.com/...`) to raw target site URLs (`https://olympustaff.com/...`). Because the data types and structures remain identical, the Kotlinx Serialization parser will continue to deserialize responses without error.
+*   **Chapter Item Schema Extension**: The backend `/manga/details` returns a list of chapters, each containing a `chapter_number` float field. The Kotlin model `ChapterItem` has been updated to deserialize this field (`val chapter_number: Float`) and assign it directly to `SChapter.chapter_number` in the frontend client.
 
 **Conclusion:** The integration is compatible and does not require changes to the serialization model.
 
