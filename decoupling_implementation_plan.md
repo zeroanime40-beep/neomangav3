@@ -46,12 +46,13 @@ This document maps out the specific implementation phases for decoupling **Neo M
   6. Route page requests dynamically in `/api/v1/chapters/pages` based on URL domain.
 
 ### Phase 6: Resilient Details Caching & Fallback URL Resolution [COMPLETED]
-* **Objective**: Introduce Stale-While-Revalidate caching, non-destructive background healing, and self-healing fallback candidate testing.
+* **Objective**: Introduce Stale-While-Revalidate caching, non-destructive background healing, self-healing fallback candidate testing, and distributed atomic concurrency locks.
 * **Steps**:
   1. Implement `get_slug_candidates` and `fetch_source_details_with_fallback` in the FastAPI backend to sequentially test variant slugs (`-manga`, `-arabic`) on HTTP 404/failures.
   2. Implement `heal_manga_details_background` executing via `BackgroundTasks` to perform a non-destructive merge of Primary, Secondary, and Cache chapters.
   3. Refactor the details endpoint to implement SWR cache-control (fresh cache is served instantly; stale cache is served instantly and background healing is triggered; empty cache is scraped synchronously).
   4. Ensure both `chapter_number` and `extracted_number` are set in chapter payloads to prevent client/auto-inference schema discrepancies. Implement on-the-fly cache cleansing (`cleanse_cached_chapters`) and defensive fallback checks (preferring `chapter_number` then falling back to `extracted_number`) to eliminate visual duplicate chapters inside client and cache merge (Release 6.1).
+  5. Integrate a distributed revalidation lease pattern (D3 Implementation) with a 5-minute safety threshold (`HEALING_LEASE_TTL_SECONDS = 300`) and `"acquired_by": "render_api_worker"` lock tags. Leverage atomic MongoDB `find_one_and_update` on stale cache reads to only trigger one concurrent background scrape, resolving thundering herd resource locks. Clear the lock cleanly via explicit `$unset` operators on both completion and exception/finally fallback pathways inside `heal_manga_details_background`.
 
 ### Phase 7: Database Integrity & Resiliency [COMPLETED]
 * **Objective**: Refactor backend persistence to use atomic queries, programmatic indexes, retry cooldowns, and serverless pooling.
