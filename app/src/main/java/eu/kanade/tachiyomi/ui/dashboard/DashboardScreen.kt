@@ -578,8 +578,13 @@ class DashboardScreen : Screen {
                         border = BorderStroke(1.dp, Color(0x1F00E5FF))
                     ) {
                         AsyncImage(
-                            model = manga,
+                            model = ImageRequest.Builder(LocalContext.current)
+                                .data(manga.thumbnailUrl)
+                                .crossfade(true)
+                                .build(),
                             contentDescription = null,
+                            placeholder = androidx.compose.ui.graphics.painter.ColorPainter(Color.DarkGray),
+                            fallback = androidx.compose.ui.graphics.painter.ColorPainter(Color.DarkGray),
                             modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.Crop
                         )

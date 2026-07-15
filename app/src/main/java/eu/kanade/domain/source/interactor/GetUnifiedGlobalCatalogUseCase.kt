@@ -17,6 +17,8 @@ import tachiyomi.domain.source.service.SourceManager
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import eu.kanade.tachiyomi.extension.ExtensionManager
+import tachiyomi.core.common.util.system.logcat
+import logcat.LogPriority
 import java.util.concurrent.atomic.AtomicReference
 
 class GetUnifiedGlobalCatalogUseCase(
@@ -58,26 +60,51 @@ class GetUnifiedGlobalCatalogUseCase(
 
             if (prioritySource != null) {
                 try {
-                    val networkMangas1 = prioritySource.getPopularManga(1).mangas
-                    val networkMangas2 = prioritySource.getPopularManga(2).mangas
-                    val networkMangas3 = prioritySource.getPopularManga(3).mangas
-                    
+                    // Phase 1: Fetch page 1 with 15s timeout (covers Render.com cold-start)
+                    val networkMangas1 = withTimeoutOrNull(15_000L) {
+                        prioritySource.getPopularManga(1).mangas
+                    }
+                    if (networkMangas1.isNullOrEmpty()) {
+                        logcat(LogPriority.WARN) { "Dashboard catalog page 1 timed out or empty" }
+                        return@withLock emptyList()
+                    }
+
                     val domainMangas1 = networkMangas1.map { it.toDomainManga(prioritySource.id) }
-                    val domainMangas2 = networkMangas2.map { it.toDomainManga(prioritySource.id) }
-                    val domainMangas3 = networkMangas3.map { it.toDomainManga(prioritySource.id) }
-                    
                     val persistentMangas1 = networkToLocalManga.invoke(domainMangas1)
-                    val persistentMangas2 = networkToLocalManga.invoke(domainMangas2)
-                    val persistentMangas3 = networkToLocalManga.invoke(domainMangas3)
-                    
-                    val combined = persistentMangas1 + persistentMangas2 + persistentMangas3
-                    rawPool.set(combined)
+
+                    // Immediately publish page 1 for fast Time-To-First-Content
                     cachedPriorityMangas.set(persistentMangas1)
-                    combined
+                    rawPool.set(persistentMangas1)
+
+                    // Phase 2: Lazy-load pages 2-3 after page 1 is visible
+                    try {
+                        val networkMangas2 = withTimeoutOrNull(10_000L) {
+                            prioritySource.getPopularManga(2).mangas
+                        } ?: emptyList()
+                        val networkMangas3 = withTimeoutOrNull(10_000L) {
+                            prioritySource.getPopularManga(3).mangas
+                        } ?: emptyList()
+
+                        if (networkMangas2.isNotEmpty() || networkMangas3.isNotEmpty()) {
+                            val domainMangas2 = networkMangas2.map { it.toDomainManga(prioritySource.id) }
+                            val domainMangas3 = networkMangas3.map { it.toDomainManga(prioritySource.id) }
+                            val persistentMangas2 = networkToLocalManga.invoke(domainMangas2)
+                            val persistentMangas3 = networkToLocalManga.invoke(domainMangas3)
+                            val combined = persistentMangas1 + persistentMangas2 + persistentMangas3
+                            rawPool.set(combined)
+                        }
+                    } catch (e: Exception) {
+                        logcat(LogPriority.WARN) { "Dashboard catalog pages 2-3 failed: ${e.message}" }
+                        // Page 1 already published, pages 2-3 failure is non-critical
+                    }
+
+                    rawPool.get() ?: persistentMangas1
                 } catch (e: Exception) {
+                    logcat(LogPriority.WARN) { "Dashboard catalog load failed: ${e.message}" }
                     emptyList()
                 }
             } else {
+                logcat(LogPriority.WARN) { "Dashboard: No catalogue source found" }
                 emptyList()
             }
         }
@@ -150,6 +177,7 @@ class GetUnifiedGlobalCatalogUseCase(
                 emit(emptyList()) // No source found, emit empty gracefully
             }
         } catch (e: Exception) {
+            logcat(LogPriority.WARN) { "Dashboard await() failed for page $page: ${e.message}" }
             emit(emptyList()) // Catch errors and emit empty list to stop spinner
         }
     }

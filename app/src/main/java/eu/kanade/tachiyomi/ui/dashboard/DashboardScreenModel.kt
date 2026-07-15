@@ -7,10 +7,13 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import tachiyomi.domain.chapter.interactor.GetChaptersByMangaId
 import tachiyomi.domain.history.interactor.GetHistory
 import tachiyomi.domain.history.interactor.GetNextChapters
 import tachiyomi.domain.manga.model.Manga
+import tachiyomi.core.common.util.system.logcat
+import logcat.LogPriority
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
@@ -91,29 +94,39 @@ class DashboardScreenModel(
         }
 
         // Silent background hydration for Featured and Recommendations
+        // Budget: 5 attempts × 3s delay = 15s total (covers Render.com cold-start)
         screenModelScope.launch {
             var attempts = 0
             var success = false
-            while (!success && attempts < 3) {
+            while (!success && attempts < 5) {
                 try {
-                    // Exclusively pull from "Team X" catalog via GetUnifiedGlobalCatalogUseCase priority cache
+                    // Pull from "Team X" catalog via GetUnifiedGlobalCatalogUseCase priority cache
                     getGlobalCatalog.ensurePriorityCatalogLoaded("Team X")
-                    getGlobalCatalog.await(1).collect { cached ->
-                        if (cached.isNotEmpty()) {
-                            refreshCatalog()
-                            success = true
-                        }
+
+                    // Bounded fetch: 10s timeout, single emission, no hanging collect
+                    val result = withTimeoutOrNull(10_000L) {
+                        getGlobalCatalog.await(1).firstOrNull()
+                    }
+
+                    if (!result.isNullOrEmpty()) {
+                        refreshCatalog()
+                        success = true
+                        logcat(LogPriority.INFO) { "Dashboard hydrated with ${result.size} manga" }
                     }
                 } catch (e: Exception) {
-                    // Fail silently, preserving empty state for zero-blocking UI
+                    logcat(LogPriority.WARN) { "Dashboard hydration attempt ${attempts + 1} failed: ${e.message}" }
                 }
 
                 if (!success) {
                     attempts++
-                    if (attempts < 3) {
-                        kotlinx.coroutines.delay(2000L)
+                    if (attempts < 5) {
+                        kotlinx.coroutines.delay(3000L)
                     }
                 }
+            }
+
+            if (!success) {
+                logcat(LogPriority.WARN) { "Dashboard hydration exhausted all 5 attempts" }
             }
         }
     }
