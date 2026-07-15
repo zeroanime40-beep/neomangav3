@@ -94,6 +94,7 @@ Neo Manga v3 began as a fork/evolution of the Mihon open-source manga reader. Th
 - **Invisible Carousel / UI Collapse:** The `HorizontalPager` was completely collapsing and rendering invisible because it was measured inside a `Column` with `verticalScroll()` (unbounded constraints). Fixed by migrating the root container of `DashboardScreen.kt` to a `LazyColumn` and wrapping all UI sections in `item {}` blocks.
 - **Missing Cover Images:** The carousel images were completely invisible because Coil 3's `AsyncImage` was receiving a raw `Manga` object. Fixed by switching to an explicit `ImageRequest.Builder` targeting `thumbnailUrl`.
 - **Carousel Blank Rendering & Hydration Race Conditions:** The Featured Carousel rendered blank or stayed stuck in a loading shimmer on startup due to eager cold-flow execution of `await()`, race conditions on source loading in `first()`, and RTL page mirroring in Compose Pager. Resolved by converting `await()` to a standard flow builder, adding a 5-second timeout and 3x retry lookup loop for the Team X extension, preloading the catalog in `DashboardScreenModel`, using `.collect {}` to prevent implicit cancellations, disabling RTL mirroring on `HorizontalPager` with `reverseLayout = false`, declaring `PageSize.Fill`, and adding a `ColorPainter` fallback to `AsyncImage` to ensure the layout remains visible even if the thumbnail is null.
+- **Sole Source Pivot to Olympus Staff (July 15, 2026):** Transitioned the backend to use Olympus Staff (`https://olympustaff.com`) as the sole metadata source. Implemented server-side masquerading across `/manga/catalog`, `/manga/details`, and `/chapters/pages` to intercept MeshManga requests and resolve them entirely against Olympus. Created `purge_and_rebuild_database` inside `core/database.py` to programmatically wipe collections and reassert unique indexes.
 ---
 
 ## [Current State]
@@ -109,6 +110,7 @@ Neo Manga v3 began as a fork/evolution of the Mihon open-source manga reader. Th
 - **Resilience Telemetry & Selector Drift Detection:** Active monitoring of CSS selectors in WordPress/Madara parsers with fallback warning triggers and critical alerts.
 - **Django REST API Schema Contract Validation:** Active signature guarding on MeshManga's backend endpoints to prevent silent schema breakage.
 - **Safe Exception Shielding & Fallback Recovery:** Seamless request lifecycle protection that falls back to cached MongoDB records if network parsers fail or drift.
+- **Monolithic Olympus Staff Source:** All discovery, details, and chapter page fetches resolve purely through Olympus Staff with server-side masquerading for Team X.
 
 
 ### Key Project Files
