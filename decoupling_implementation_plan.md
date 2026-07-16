@@ -74,8 +74,8 @@ This document maps out the specific implementation phases for decoupling **Neo M
 ### Phase 9: Render.com API Server Migration [COMPLETED]
 * **Objective**: Migrate production backend deployment from Vercel to Render.com persistent web service to improve response stability and ensure keep-alive connection reliability.
 * **Steps**:
-  1. Refactor hardcoded Vercel API base URLs in frontend Kotlin source files (`MeshMangaExtension.kt` and `NeoMangaMasterExtension.kt`) to point to `https://neomanga-api-server.onrender.com/api/v1`.
-  2. Update the default URL fallback setting in `NetworkPreferences.kt` to Render.com's URL.
+  1. Refactor hardcoded Vercel API base URLs in frontend Kotlin source files (`MeshMangaExtension.kt` and `NeoMangaMasterExtension.kt`) to point to `https://neomanga-v4-server-production.up.railway.app/api/v1`.
+  2. Update the default URL fallback setting in `NetworkPreferences.kt` to Railway's URL.
   3. Ensure that the cloud-agnostic Python server codebase contains no environment-locked deployment URLs.
   4. Compile and verify Kotlin and Python configurations cleanly.
 

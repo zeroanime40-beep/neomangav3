@@ -15,7 +15,7 @@ class NeoMangaMasterExtension : HttpSource() {
 
     override val name: String = "Olympus Staff"
     override val id: Long = 1382165189279060276L
-    override val baseUrl: String = "https://neomanga-api-server-beryl.vercel.app/api/v1"
+    override val baseUrl: String = "https://neomanga-v4-server-production.up.railway.app/api/v1"
     override val lang: String = "ar"
     override val supportsLatest: Boolean = true
 

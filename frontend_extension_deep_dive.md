@@ -29,7 +29,7 @@ sequenceDiagram
 ### Class Layout & Properties
 `NeoMangaMasterExtension` extends `HttpSource` (which itself extends `Source`). It defines the following properties:
 *   `name`: Defined as `"Team X"`.
-*   `baseUrl`: Points to the API server (`https://neomanga-api-server.onrender.com/api/v1`).
+*   `baseUrl`: Points to the API server (`https://neomanga-v4-server-production.up.railway.app/api/v1`).
 *   `lang`: Target language set to `"ar"` (Arabic).
 *   `supportsLatest`: Enabled (`true`) to allow the client to request recent updates.
 *   `siteUrl`: Defaults to `"https://olympustaff.com"` as the default source site.
