@@ -90,8 +90,10 @@ class NeoMangaMasterExtension : HttpSource() {
         fetchDetails: Boolean,
         fetchChapters: Boolean,
     ): SMangaUpdate {
+        val mangaUrl = getMangaUrl(manga)
+        val slug = mangaUrl.trimEnd('/').substringAfterLast('/')
         val url = "$baseUrl/manga/details".toHttpUrl().newBuilder()
-            .addQueryParameter("manga_url", getMangaUrl(manga))
+            .addQueryParameter("manga", slug)
             .build()
         val request = Request.Builder().url(url).build()
         val response = client.newCall(request).execute()

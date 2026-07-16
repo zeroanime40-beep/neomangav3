@@ -74,7 +74,7 @@ interface NeoMangaApi {
 
     @GET("manga/details")
     suspend fun getMangaDetails(
-        @Query("manga_url") mangaUrl: String
+        @Query("manga") mangaSlug: String
     ): MangaDetailsResponseDto
 
     @GET("chapters/pages")
@@ -107,6 +107,9 @@ class NeoMangaApiClient(
 
     suspend fun getLatestManga(siteUrl: String) = getApi().getLatestManga(siteUrl)
     suspend fun getMangaCatalog(siteUrl: String, page: Int? = null, pages: Int? = null) = getApi().getMangaCatalog(siteUrl, page, pages)
-    suspend fun getMangaDetails(mangaUrl: String) = getApi().getMangaDetails(mangaUrl)
+    suspend fun getMangaDetails(mangaUrl: String): MangaDetailsResponseDto {
+        val slug = mangaUrl.trimEnd('/').substringAfterLast('/')
+        return getApi().getMangaDetails(slug)
+    }
     suspend fun getChapterPages(chapterUrl: String) = getApi().getChapterPages(chapterUrl)
 }
